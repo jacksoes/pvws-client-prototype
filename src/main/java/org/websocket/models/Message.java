@@ -1,0 +1,21 @@
+package org.websocket.models;
+
+public class Message {
+    private String type;
+    private String[] pvs;
+
+    public Message(){
+
+    }
+
+    public Message(String type, String[] pvs) {
+        this.type = type;
+        this.pvs = pvs;
+    }
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+
+    public String[] getPvs() { return pvs; }
+    public void setPvs(String[] pvs) { this.pvs = pvs; }
+}
