@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.websocket.models.Message;
+import org.websocket.models.PV;
 
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
@@ -37,8 +38,8 @@ public class SessionHandler extends WebSocketClient {
                 switch (type) {
                     case "subscribe":
                     case "update":
-                        Message msgObj = mapper.treeToValue(node, Message.class);
-                        System.out.println("Parsed Message: " + msgObj);
+                        PV msgObj = mapper.treeToValue(node, PV.class);
+                        System.out.println("Parsed Message: " + msgObj.getValue());
                         break;
 
                     // Add other cases for different message types
