@@ -25,8 +25,8 @@ public class PV {
 
     // Getters and Setters
 
-    public boolean setReadonly() {
-        return readonly;
+    public void setReadonly(boolean readonly) {
+        this.readonly =  readonly;
     }
 
     public boolean getReadonly() {
