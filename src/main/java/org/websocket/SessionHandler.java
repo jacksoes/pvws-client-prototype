@@ -77,17 +77,20 @@ public class SessionHandler extends WebSocketClient {
     private void attemptReconnect() {
         if (!reconnecting) {
             reconnecting = true;
-            System.out.println("🔁 Attempting to reconnect in 5 seconds...");
+            System.out.println("🔁 Attempting to reconnect in 10 seconds...");
             scheduler.schedule(() -> {
                 try {
                     this.reconnectBlocking();  // blocking reconnect
+                    subHandler.subscribeCache();
                     System.out.println("✅ Reconnected");
                 } catch (InterruptedException e) {
                     System.err.println("❌ Reconnect failed: " + e.getMessage());
                     reconnecting = false;
                     attemptReconnect();  // keep retrying
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
                 }
-            }, 5, TimeUnit.SECONDS);
+            }, 20, TimeUnit.SECONDS);
         }
     }
 
