@@ -16,10 +16,11 @@ public class PVcache {
 
     public void uncachePVs(String[] pvs) {
 
-        for (String cachedPV : cache) {
-            if (cache.contains(cachedPV)){
-                System.out.println("removed PV from cache: " + cachedPV);
-                cache.remove(cachedPV);
+        for (String pv: pvs) {
+            if (cache.contains(pv)){
+                cache.remove(pv);
+                System.out.println("removed PV from cache: " + pv);
+
             }
         }
     }

@@ -36,10 +36,10 @@ public class SubscriptionHandler {
     }
 
     public void unSubscribe(String[] pvs) throws JsonProcessingException {
-
+        Message message = new Message("clear", pvs);
+        String json = mapper.writeValueAsString(message);
+        client.send(json);
         subCache.uncachePVs(pvs);
-        subscribeCache();
-
     }
 
 

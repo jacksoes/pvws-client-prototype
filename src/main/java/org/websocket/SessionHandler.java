@@ -9,7 +9,6 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.websocket.models.PV;
 
 import java.net.URI;
-import java.util.*;
 import java.util.concurrent.*;
 
 public class SessionHandler extends WebSocketClient {
@@ -64,21 +63,19 @@ public class SessionHandler extends WebSocketClient {
             System.err.println("❌ Failed to parse message: " + e.getMessage());
         }
         */
-        System.out.println("📨 Received: " + message);
+        System.out.println("📨👍👍 Received: " + message);
         try {
             JsonNode node = mapper.readTree(message);
-
+            // each message from server has type, type of update will look something like this: {"type":"update","pv":"sim://sine","ts":"2025-06-30T19:39:50.
             if (node.has("type")) {
                 String type = node.get("type").asText();
-
                 switch (type) {
-                    case "subscribe":
-                    case "update":
-                        PV msgObj = mapper.treeToValue(node, PV.class);
-                        System.out.println("✅ Parsed Message: " + msgObj.getSeconds());
+                    case "update": //this type means its an updated process variable;
+                        PV pvObj = mapper.treeToValue(node, PV.class);
+                        System.out.println("✅😊 Parsed Message: " + pvObj);
                         break;
                     default:
-                        System.out.println("⚠️ Unknown message type: " + type);
+                        System.out.println("⚠️ 😤Unknown message type: " + type);
                 }
             } else {
                 System.out.println("⚠️ Message without 'type': " + message);
@@ -104,10 +101,10 @@ public class SessionHandler extends WebSocketClient {
     private void attemptReconnect() {
         if (!reconnecting) {
             reconnecting = true;
-            System.out.println("🔁 Attempting to reconnect in 10 seconds...");
+            System.out.println("🔁 😉Attempting to reconnect in 10 seconds...");
             scheduler.schedule(() -> {
                 try {
-                    this.reconnectBlocking();  // blocking reconnect
+                    this.reconnectBlocking();  // blocks thread while attempting reconnect
                     subHandler.subscribeCache();
                     System.out.println("✅ Reconnected");
                 } catch (InterruptedException e) {
@@ -122,7 +119,7 @@ public class SessionHandler extends WebSocketClient {
     }
 
     public void closeClient() {
-        scheduler.shutdownNow();
+        scheduler.shutdownNow(); //disables auto reconnect
         this.close();
     }
 
