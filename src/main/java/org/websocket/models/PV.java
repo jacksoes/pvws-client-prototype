@@ -20,10 +20,19 @@ public class PV {
     private double alarm_high;
     private boolean readonly;
 
+    private String ts;
+
     public PV() {
     }
 
     // Getters and Setters
+    public void setTs(String ts) {
+        this.ts = ts;
+    }
+
+    public String getTs() {
+        return ts;
+    }
 
     public void setReadonly(boolean readonly) {
         this.readonly =  readonly;
