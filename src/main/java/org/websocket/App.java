@@ -35,8 +35,8 @@ public class App
 
 
         String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
-        client.subscribeClient(PVs);
-        
+        //client.subscribeClient(PVs);
+
 
         //client.close();
 

@@ -6,9 +6,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+import org.websocket.models.Message;
 import org.websocket.models.PV;
 
 import java.net.URI;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.*;
 
 public class SessionHandler extends WebSocketClient {
@@ -39,30 +42,7 @@ public class SessionHandler extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
-    /*
-        try {
-            JsonNode node = mapper.readTree(message);
-            if (node.has("type") && node.has("pv")) {
-                String type = node.get("type").asText();
-                String pvName = node.get("pv").asText();
 
-                if (type.equals("update") || type.equals("subscribe")) {
-                    long now = System.nanoTime();
-                    long latency = now - subscribeStartTime;
-
-                    // Record latency
-                    pvLatencies
-                            .computeIfAbsent(pvName, k -> Collections.synchronizedList(new ArrayList<>()))
-                            .add(latency);
-
-                    System.out.printf("📨 [%s] Message #%d after %.3f ms%n", pvName,
-                            pvLatencies.get(pvName).size(), latency / 1_000_000.0);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Failed to parse message: " + e.getMessage());
-        }
-        */
         System.out.println("📨👍👍 Received: " + message);
         try {
             JsonNode node = mapper.readTree(message);
@@ -116,6 +96,22 @@ public class SessionHandler extends WebSocketClient {
                 }
             }, 20, TimeUnit.SECONDS);
         }
+    }
+
+    private void handleHeartbeat(){
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            public void run() {
+                Message message = new Message("ping");
+                try {
+                    String json = mapper.writeValueAsString(message);
+                    send(json);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                System.out.println("Ping sent");
+            }
+        }, 0, 10000);
     }
 
     public void closeClient() {
