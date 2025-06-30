@@ -18,7 +18,7 @@ public class App
         CountDownLatch latch = new CountDownLatch(1);  // Wait until connected.
         ObjectMapper mapper = new ObjectMapper(); // library for JSON mapping/parsing.
 
-
+/*
         SessionHandler client = new SessionHandler(serverUri, latch, mapper);// extends websocket client and handles session
 
         PVcache cache = new PVcache();
@@ -35,12 +35,12 @@ public class App
         // turn message into json object because server only accepts json.
         //Message message = new Message("subscribe", new String[]{"pva://jack:calc1", "loc://x(4)"});
 
-/*
+
         String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
 
         client.subscribeClient(PVs);
 
- */
+
             //TEST START
        /* Message subscribeMsg = new Message("subscribe", new String[]{"sim://sine", "sim://cos"});
         String json = mapper.writeValueAsString(subscribeMsg);
@@ -71,8 +71,10 @@ public class App
             System.out.printf("PV %s: ms%n", pv);
         });
         */
-        TestLatency test = new TestLatency(serverUri, latch, mapper);
+
+        TestLatency2 test = new TestLatency2(serverUri, latch, mapper);
         test.connect();
+        Thread.sleep(5000);
         test.testing();
     }
 

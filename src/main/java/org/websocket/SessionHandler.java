@@ -75,7 +75,7 @@ public class SessionHandler extends WebSocketClient {
                     case "subscribe":
                     case "update":
                         PV msgObj = mapper.treeToValue(node, PV.class);
-                        System.out.println("✅ Parsed Message: " + msgObj.getValue());
+                        System.out.println("✅ Parsed Message: " + msgObj.getSeconds());
                         break;
                     default:
                         System.out.println("⚠️ Unknown message type: " + type);

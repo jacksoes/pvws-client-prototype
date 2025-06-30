@@ -1,18 +1,19 @@
 package org.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.websocket.models.Message;
+import org.websocket.models.PV;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-public class TestLatency extends WebSocketClient {
+public class TestLatency2 extends WebSocketClient {
     ObjectMapper mapper;
     CountDownLatch latch;
     public final ArrayList<String> firstMessageLatencies = new ArrayList<>();
@@ -24,7 +25,7 @@ public class TestLatency extends WebSocketClient {
 
 
 
-    public TestLatency(URI serverUri, CountDownLatch latch, ObjectMapper mapper) {
+    public TestLatency2(URI serverUri, CountDownLatch latch, ObjectMapper mapper) {
         super(serverUri);
         this.latch = latch;
         this.mapper = mapper;
@@ -35,7 +36,9 @@ public class TestLatency extends WebSocketClient {
 
     public void testing() throws JsonProcessingException, InterruptedException {
         //TEST START
-        Message subscribeMsg = new Message("subscribe", new String[]{"sim://sine", "sim://cos"});
+        System.out.println("sent subscription");
+
+        Message subscribeMsg = new Message("subscribe", new String[]{"ca://jack:calc1"});
         String json = mapper.writeValueAsString(subscribeMsg);
         long start = System.nanoTime();
         this.setSubscribeStartTime(start);
@@ -44,12 +47,14 @@ public class TestLatency extends WebSocketClient {
 
         System.out.println("=== Latency Summary ===");
 
+
+
         this.pvLatencies.forEach((pv, list) -> {
-            double avgMs = list.stream().mapToLong(l -> l).average().orElse(0) / 1_000_000.0;
+            double avgMs = list.stream().mapToLong(l -> l).average().orElse(0);
             System.out.printf("PV: %s | Msgs: %d | Avg: %.2f ms | First: %.2f ms | Last: %.2f ms%n",
                     pv, list.size(), avgMs,
-                    list.get(0) / 1_000_000.0,
-                    list.get(list.size() - 1) / 1_000_000.0
+                    (double) list.get(0),
+                    (double) list.get(list.size() - 1)
             );
         });
 
@@ -75,28 +80,39 @@ public class TestLatency extends WebSocketClient {
     @Override
     public void onMessage(String message) {
 
+        PV pvData = null;
         try {
-            JsonNode node = mapper.readTree(message);
-            if (node.has("type") && node.has("pv")) {
-                String type = node.get("type").asText();
-                String pvName = node.get("pv").asText();
-
-                if (type.equals("update") || type.equals("subscribe")) {
-                    long now = System.nanoTime();
-                    long latency = now - subscribeStartTime;
-
-                    // Record latency
-                    pvLatencies
-                            .computeIfAbsent(pvName, k -> Collections.synchronizedList(new ArrayList<>()))
-                            .add(latency);
-
-                    System.out.printf("📨 [%s] Message #%d after %.3f ms%n", pvName,
-                            pvLatencies.get(pvName).size(), latency / 1_000_000.0);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Failed to parse message: " + e.getMessage());
+            pvData = mapper.readValue(message, PV.class);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException(ex);
         }
+
+        String type = pvData.getType();
+        String pv = pvData.getPv();
+
+        if (type != null && (type.equals("update") || type.equals("subscribe"))) {
+            // ✅ Parse timestamp and calculate latency
+
+
+            //long seconds = Long.parseLong(pvData.getSeconds() + "");
+            //Instant sentTime = Instant.ofEpochSecond(seconds);
+            //InstsentTime = Instant.parse((pvData.getSeconds() + ""));
+            //long latency = Instant.now().toEpochMilli() - sentTime.toEpochMilli();
+
+            long millis = pvData.getSeconds() * 1000L; // Assuming this returns millis
+            Instant sentTime = Instant.ofEpochMilli(millis);
+            long latency = Instant.now().toEpochMilli() - sentTime.toEpochMilli();
+
+            // ✅ Store latency
+            pvLatencies
+                    .computeIfAbsent(pv, k -> Collections.synchronizedList(new ArrayList<>()))
+                    .add(latency);
+
+            System.out.printf("📨 [%s] Message #%d after %.3f ms%n", pv,
+                    pvLatencies.get(pv).size(), (double) latency);
+        }
+
+    }
         /*
         System.out.println("📨 Received: " + message);
         try {
@@ -121,7 +137,7 @@ public class TestLatency extends WebSocketClient {
         } catch (Exception e) {
             System.err.println("❌ Failed to parse message: " + e.getMessage());
         }*/
-    }
+    //}
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
