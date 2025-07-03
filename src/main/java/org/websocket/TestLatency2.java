@@ -14,6 +14,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
+//TRY TO DO WITH SECONDS AND NANOSECONDS INSTEAD OF TS ATTRIBUTE
+// FIND EXPLANATION WHY THIS LATENCY IS LOWER THAN STOMP
+
 public class TestLatency2 extends WebSocketClient {
     private final ObjectMapper mapper;
     private final CountDownLatch latch;
@@ -37,7 +40,7 @@ public class TestLatency2 extends WebSocketClient {
         String json = mapper.writeValueAsString(subscribeMsg);
         this.send(json);
 
-        Thread.sleep(5000); // wait for messages
+        Thread.sleep(50000); // wait for messages
 
         System.out.println("=== Latency Summary ===");
         this.pvLatencies.forEach((pv, list) -> {

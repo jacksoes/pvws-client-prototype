@@ -34,18 +34,17 @@ public class App
         //Message message = new Message("subscribe", new String[]{"pva://jack:calc1", "loc://x(4)"});
 
 
-        String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
+        //String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
         //client.subscribeClient(PVs);
 
 
         //client.close();
 
 
-/*        TestLatency2 test = new TestLatency2(serverUri, latch, mapper);
-        test.connect();
-        Thread.sleep(5000);
-        test.testing();
-        */
+        //TestLatency2 test = new TestLatency2(serverUri, latch, mapper);
+        //test.connect();
+        //test.testing();
+
 
 
     }

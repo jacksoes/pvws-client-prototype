@@ -39,7 +39,7 @@ public class SessionHandler extends WebSocketClient {
         latch.countDown();
         reconnecting = false;
     }
-
+    //AUTHENTICATION MIGHT BE NEEDED FOR NON-STOMP
     @Override
     public void onMessage(String message) {
 
@@ -77,7 +77,7 @@ public class SessionHandler extends WebSocketClient {
         System.err.println("🚨 WebSocket Error: " + ex.getMessage());
         attemptReconnect();
     }
-
+        // FOR AUTO RECCONNECT
     private void attemptReconnect() {
         if (!reconnecting) {
             reconnecting = true;
@@ -98,6 +98,7 @@ public class SessionHandler extends WebSocketClient {
         }
     }
 
+    // HAVE TO SHOW PING ON SERVER AND RECEIVE PONG
     private void handleHeartbeat(){
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
