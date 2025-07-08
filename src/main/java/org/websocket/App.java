@@ -34,8 +34,8 @@ public class App
         //Message message = new Message("subscribe", new String[]{"pva://jack:calc1", "loc://x(4)"});
 
 
-        //String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
-        //client.subscribeClient(PVs);
+        String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
+        client.subscribeClient(PVs);
 
 
         //client.close();
@@ -53,3 +53,6 @@ public class App
 
 
 }
+
+
+//CREDENTIALS USERNAME AND PASSWORD SHOULD BE SENT ON CONNECT I THINK

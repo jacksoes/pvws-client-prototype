@@ -1,5 +1,5 @@
 package org.websocket;
-
+/*
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.java_websocket.client.WebSocketClient;
@@ -112,5 +112,8 @@ public class TestLatency2 extends WebSocketClient {
     public void onError(Exception ex) {
         System.err.println("🚨 WebSocket Error: " + ex.getMessage());
     }
+
+
 }
 
+*/
