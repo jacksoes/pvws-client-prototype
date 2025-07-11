@@ -4,6 +4,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+//can replace cache set with hashmap,
+// 1 WEBSOCKET PER CLIENT?
+
 public class PVcache {
 
     private final Set<String> cache = new HashSet<>();

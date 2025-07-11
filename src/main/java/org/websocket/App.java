@@ -34,11 +34,12 @@ public class App
         //Message message = new Message("subscribe", new String[]{"pva://jack:calc1", "loc://x(4)"});
 
 
-        String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
-        client.subscribeClient(PVs);
+        //String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
+       // client.subscribeClient(PVs);
 
+        Thread.sleep(5000000);
 
-        //client.close();
+        client.close();
 
 
         //TestLatency2 test = new TestLatency2(serverUri, latch, mapper);
@@ -55,4 +56,11 @@ public class App
 }
 
 
+//BRING UP SERVER AND CLIENT
+
 //CREDENTIALS USERNAME AND PASSWORD SHOULD BE SENT ON CONNECT I THINK
+
+
+//USE MESSAGES ALREADY ON PVWS SERVER MODELING
+// VTYPE TO JSON
+//

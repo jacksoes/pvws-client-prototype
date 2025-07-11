@@ -4,15 +4,23 @@ package org.websocket;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ServerHandshake;
 import org.websocket.models.Message;
 import org.websocket.models.PV;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.*;
+
+import org.java_websocket.framing.PingFrame;
+
+//LOOK FOR EXAMPLES OF HEARTBEAT AND PING PONG ON WEBSOCKET AND STOMP WEBSOCKET
 
 public class SessionHandler extends WebSocketClient {
     private final ObjectMapper mapper;
@@ -38,6 +46,7 @@ public class SessionHandler extends WebSocketClient {
         System.out.println("✅ Connected to server");
         latch.countDown();
         reconnecting = false;
+        handleHeartbeat();
     }
     //AUTHENTICATION MIGHT BE NEEDED FOR NON-STOMP
     @Override
@@ -54,6 +63,18 @@ public class SessionHandler extends WebSocketClient {
                         PV pvObj = mapper.treeToValue(node, PV.class);
                         System.out.println("✅😊 Parsed Message: " + pvObj);
                         break;
+                    case "ping":
+                        System.out.println("😀 received ping from server sending pong");
+                        try {
+                            String json = mapper.writeValueAsString(new Message("pong"));
+                            send(json);
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException(e);
+                        }
+                        break;
+                    case "pong":
+                        Message pong = mapper.treeToValue(node, Message.class);
+                        System.out.println("parse pong: " + pong);
                     default:
                         System.out.println("⚠️ 😤Unknown message type: " + type);
                 }
@@ -103,16 +124,17 @@ public class SessionHandler extends WebSocketClient {
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
-                Message message = new Message("ping");
+               /* Message message = new Message("ping");
                 try {
                     String json = mapper.writeValueAsString(message);
                     send(json);
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
-                }
-                System.out.println("Ping sent");
+                }*/
+                sendPingToServer();
+                System.out.println("Ping sent✉️");
             }
-        }, 0, 10000);
+        }, 0, 20000);
     }
 
     public void closeClient() {
@@ -134,6 +156,41 @@ public class SessionHandler extends WebSocketClient {
         subHandler.unSubscribe(pvs);
     }
 
+    @Override
+    public void onWebsocketPing(WebSocket conn, Framedata f) {
+        System.out.println("Received Ping frame");
+        super.onWebsocketPing(conn, f);
+    }
+
+    @Override
+    public void onWebsocketPong(WebSocket conn, Framedata f) {
+        System.out.println("Received Pong frame");
+        super.onWebsocketPong(conn, f);
+    }
+
+
+
+    public void sendPingToServer() {
+        try {
+            PingFrame ping = new PingFrame();
+            // Optional: set payload data (must be <= 125 bytes)
+            ping.setPayload(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
+
+            this.sendFrame(ping);  // send the ping frame manually
+            System.out.println("Ping frame sent to server");
+        } catch (Exception e) {
+            System.err.println("Failed to send ping: " + e.getMessage());
+        }
+    }
 
 
 }
+
+//BENEFITS OF PING CLIENT->SERVER:
+/*
+1. Client will not be dropped if it is idle
+2. verifies server is up and responsive
+3. can attempt reconnect.
+4. verifies connection is healthy
+
+ */

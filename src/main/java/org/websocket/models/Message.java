@@ -1,5 +1,7 @@
 package org.websocket.models;
 
+
+//MODELING FOR SERVER AND CLIENT CAN BE IMPLEMENTED AS DEPENDENCY
 public class Message {
     private String type;
     private String[] pvs;

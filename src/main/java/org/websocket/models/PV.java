@@ -1,5 +1,9 @@
 package org.websocket.models;
 
+// parsin for value might not be double.
+
+//NEED TO MAKE VALUE V-TYPE AND MIMIC CODE FROM PVWS FILE VTYPE2JSON : jsontoVtype
+
 public class PV {
     private String type;
     private String pv;
