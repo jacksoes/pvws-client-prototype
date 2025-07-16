@@ -30,8 +30,11 @@ public class SessionHandler extends WebSocketClient {
 
     private SubscriptionHandler subHandler;
 
-
-
+    //detect missing heartbeats 
+    private ScheduledFuture<?> heartbeatCheck;
+    private volatile long lastPongTime = System.currentTimeMillis();
+    private static final long HEARTBEAT_INTERVAL = 10000;  // 10 seconds
+    private static final long HEARTBEAT_TIMEOUT = 15000;   // 15 seconds
 
 
 
@@ -43,10 +46,15 @@ public class SessionHandler extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        System.out.println("✅ Connected to server");
-        latch.countDown();
-        reconnecting = false;
-        handleHeartbeat();
+         try {
+            System.out.println("Connected to server");
+            latch.countDown();
+            reconnecting = false;
+           // System.out.println("Calling handleHeartbeat...");
+            handleHeartbeat();  } 
+        catch (Exception e) {
+        System.err.println("Exception in onOpen: " + e.getMessage());
+        e.printStackTrace(); }
     }
     //AUTHENTICATION MIGHT BE NEEDED FOR NON-STOMP
     @Override
@@ -90,58 +98,83 @@ public class SessionHandler extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         System.out.println("❌ Disconnected. Reason: " + reason);
+        stopHeartbeat();
         attemptReconnect();
     }
 
     @Override
     public void onError(Exception ex) {
         System.err.println("🚨 WebSocket Error: " + ex.getMessage());
+        stopHeartbeat();
         attemptReconnect();
     }
         // FOR AUTO RECCONNECT
-    private void attemptReconnect() {
-        if (!reconnecting) {
-            reconnecting = true;
-            System.out.println("🔁 😉Attempting to reconnect in 10 seconds...");
-            scheduler.schedule(() -> {
+   private void attemptReconnect() {
+    if (!reconnecting) {
+        reconnecting = true;
+
+        Runnable reconnectTask = new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Attempting to reconnect...");
                 try {
-                    this.reconnectBlocking();  // blocks thread while attempting reconnect
+                    reconnectBlocking();  // Blocks until connected or fails
                     subHandler.subscribeCache();
-                    System.out.println("✅ Reconnected");
+                    if (isOpen()) {
+                        System.out.println("Reconnected");
+                        reconnecting = false;
+                        subHandler.subscribeCache();
+                        return; // stop retrying
+                    } else {
+                        throw new IllegalStateException("Connection not open after reconnect attempt.");
+                    }
                 } catch (InterruptedException e) {
-                    System.err.println("❌ Reconnect failed: " + e.getMessage());
-                    reconnecting = false;
-                    attemptReconnect();  // keep retrying
+                    System.err.println("Reconnect interrupted: " + e.getMessage());
+                    scheduleRetry(this);
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
+                } catch (Exception e) {
+                    System.err.println("Reconnect failed: " + e.getMessage());
+                    scheduleRetry(this);
                 }
-            }, 20, TimeUnit.SECONDS);
-        }
+            }
+
+            private void scheduleRetry(Runnable task) {
+                System.out.println("Will retry in 10 seconds...");
+                scheduler.schedule(task, 10, TimeUnit.SECONDS);
+            }
+        };
+
+        scheduler.execute(reconnectTask); // First try immediately
     }
+}
 
     // HAVE TO SHOW PING ON SERVER AND RECEIVE PONG
     private void handleHeartbeat(){
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            public void run() {
-               /* Message message = new Message("ping");
-                try {
-                    String json = mapper.writeValueAsString(message);
-                    send(json);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }*/
-                sendPingToServer();
-                System.out.println("Ping sent✉️");
-            }
-        }, 0, 20000);
+        System.out.println(" handleHeartbeat() called");
+        lastPongTime = System.currentTimeMillis();
+        heartbeatCheck = scheduler.scheduleAtFixedRate(() -> {
+        try {
+            //System.out.println(" Heartbeat loop running");
+            this.sendPing();
+            System.out.println("Ping sent");
+            scheduler.schedule(() -> {
+                if (System.currentTimeMillis() - lastPongTime > HEARTBEAT_TIMEOUT) {
+                    System.out.println("Heartbeat timeout. Reconnecting...");
+                    attemptReconnect();
+                }
+            }, 3, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            System.out.println("Heartbeat error: " + e.getMessage());
+            attemptReconnect();
+        }
+    }, 0, HEARTBEAT_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
     public void closeClient() {
         scheduler.shutdownNow(); //disables auto reconnect
         this.close();
     }
-
 
 
     public void setSubscriptionHandler(SubscriptionHandler subHandler) {
@@ -158,14 +191,15 @@ public class SessionHandler extends WebSocketClient {
 
     @Override
     public void onWebsocketPing(WebSocket conn, Framedata f) {
-        System.out.println("Received Ping frame");
+        System.out.println("Received Ping frame"); 
         super.onWebsocketPing(conn, f);
     }
 
     @Override
     public void onWebsocketPong(WebSocket conn, Framedata f) {
-        System.out.println("Received Pong frame");
+        System.out.println("Received Pong frame"); // you could also comment this out to test the heartbeat timeout just for visual clarity
         super.onWebsocketPong(conn, f);
+          lastPongTime = System.currentTimeMillis();  // update last pong time- comment this line out to test heartbeat timeout
     }
 
 
@@ -182,6 +216,15 @@ public class SessionHandler extends WebSocketClient {
             System.err.println("Failed to send ping: " + e.getMessage());
         }
     }
+
+    private void stopHeartbeat() {
+        if (heartbeatCheck != null && !heartbeatCheck.isCancelled()) {
+            heartbeatCheck.cancel(true);
+        }
+    }
+
+
+    
 
 
 }
