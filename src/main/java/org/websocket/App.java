@@ -34,8 +34,8 @@ public class App
         //Message message = new Message("subscribe", new String[]{"pva://jack:calc1", "loc://x(4)"});
 
 
-        //String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
-       // client.subscribeClient(PVs);
+        String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
+        client.subscribeClient(PVs);
 
         Thread.sleep(5000000);
 

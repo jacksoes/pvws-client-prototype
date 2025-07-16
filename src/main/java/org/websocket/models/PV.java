@@ -11,7 +11,7 @@ public class PV {
     private String vtype;
     private String units;
     private String description;
-    private double value;
+    private Object value;
     private int seconds;
     private int nanos;
     private int precision;
@@ -87,11 +87,11 @@ public class PV {
         this.description = description;
     }
 
-    public double getValue() {
+    public Object getValue() {
         return value;
     }
 
-    public void setValue(double value) {
+    public void setValue(Object value) {
         this.value = value;
     }
 
