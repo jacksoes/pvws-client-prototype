@@ -11,6 +11,9 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.websocket.models.Message;
 import org.websocket.models.PV;
 
+import org.epics.vtype.*;
+
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +22,8 @@ import java.util.TimerTask;
 import java.util.concurrent.*;
 
 import org.java_websocket.framing.PingFrame;
+
+//import org.epics.vtype.*;
 
 //LOOK FOR EXAMPLES OF HEARTBEAT AND PING PONG ON WEBSOCKET AND STOMP WEBSOCKET
 
@@ -82,6 +87,8 @@ public class SessionHandler extends WebSocketClient {
                         // at this point pv should always be in map with vtype
                         System.out.println(VtypeHash.map.get(name));
 
+
+                        //new VNumber();
                         //if(VtypeHash.map.get(name).equals("VDouble"))
                            // pvObj.setVtype(new Vdouble());
                         //pvObj.getVtype();
