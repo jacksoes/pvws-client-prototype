@@ -69,6 +69,27 @@ public class SessionHandler extends WebSocketClient {
                 switch (type) {
                     case "update": //this type means its an updated process variable;
                         PV pvObj = mapper.treeToValue(node, PV.class);
+
+                        String name = pvObj.getPv();
+                        String vtype = pvObj.getVtype();
+
+
+
+                        if(!VtypeHash.map.containsKey(name))
+                            VtypeHash.map.put(name, vtype);
+
+
+                        // at this point pv should always be in map with vtype
+                        System.out.println(VtypeHash.map.get(name));
+
+                        //if(VtypeHash.map.get(name).equals("VDouble"))
+                           // pvObj.setVtype(new Vdouble());
+                        //pvObj.getVtype();
+
+                        //if Vtype is null resubscribe?
+
+
+
                         System.out.println("✅😊 Parsed Message: " + pvObj);
                         break;
                     case "ping":

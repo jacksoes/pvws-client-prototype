@@ -34,6 +34,10 @@ public class App
         //Message message = new Message("subscribe", new String[]{"pva://jack:calc1", "loc://x(4)"});
 
 
+        //  MAYBE THIS HELPS SO THE FIRST MESSAGE IS NOT MISSED?
+        Thread.sleep(500);
+
+
         String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
         client.subscribeClient(PVs);
 
