@@ -4,6 +4,7 @@ package org.websocket;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.epics.util.stats.Range;
 import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.framing.Framedata;
@@ -13,10 +14,17 @@ import org.websocket.models.PV;
 
 import org.epics.vtype.*;
 
+//import org.epics.vtype.VDouble;
+import org.epics.vtype.Alarm;
+import org.epics.vtype.Time;
+import org.epics.vtype.Display;
+
 
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
+import java.time.Instant;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.*;
@@ -24,6 +32,9 @@ import java.util.concurrent.*;
 import org.java_websocket.framing.PingFrame;
 
 //import org.epics.vtype.*;
+import org.epics.util.text.NumberFormats;
+
+
 
 //LOOK FOR EXAMPLES OF HEARTBEAT AND PING PONG ON WEBSOCKET AND STOMP WEBSOCKET
 
@@ -75,6 +86,8 @@ public class SessionHandler extends WebSocketClient {
                     case "update": //this type means its an updated process variable;
                         PV pvObj = mapper.treeToValue(node, PV.class);
 
+
+                        /*
                         String nameKey = pvObj.getPv();
                         String vtypeValue = pvObj.getVtype();
                         if(!VtypeHash.map.containsKey(nameKey))
@@ -90,18 +103,37 @@ public class SessionHandler extends WebSocketClient {
 
 
                         String vtype = VtypeHash.map.get(name);
-                        if(vtype.equals("Vdouble")) {
-                            VDouble value = VDouble.of(3.1415, alarm, time, display);
-                            pvObj.setValue(value);
-                        }
+                         */
+
+                        //if (vtype.equals("VDouble")) {
+                            Alarm alarm = Alarm.of(
+                                    AlarmSeverity.valueOf(pvObj.getSeverity()),
+                                    AlarmStatus.NONE,
+                                    pvObj.getDescription()
+                            );
+
+                            Instant instant = Instant.ofEpochSecond(pvObj.getSeconds(), pvObj.getNanos());
+                            Time time = Time.of(instant);
+
+                            NumberFormat format = NumberFormats.precisionFormat(pvObj.getPrecision());
+
+                            // TO DO: ALARM PARAMETERS ARE CURRENTLY INCORRECT
+                            Display display = Display.of(Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high()), Range.of(pvObj.getWarn_low(), pvObj.getWarn_high()), Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high()), Range.of(pvObj.getMin(), pvObj.getMax()), pvObj.getUnits(), format);
+                            //Parameters:
+                        //displayRange - the display range
+                        //warningRange - the warning range
+                        //alarmRange - the alarm range
+                        //controlRange - the control range
+                        //units - the units
+                        //numberFormat - the preferred number format
 
 
+                 //           VDouble value = VDouble.of((Double) pvObj.getValue(), alarm, time, display);
 
-                        //if(VtypeHash.map.get(name).equals("VDouble"))
-                           // pvObj.setVtype(new Vdouble());
-                        //pvObj.getVtype();
+                            Object Vvalue = VType.toVType(pvObj.getValue(), alarm, time, display);
+                            //pvObj.setValue(value);
 
-                        //if Vtype is null resubscribe?
+                        //}
 
 
 
