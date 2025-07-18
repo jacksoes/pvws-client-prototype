@@ -84,14 +84,27 @@ public class SessionHandler extends WebSocketClient {
                 String type = node.get("type").asText();
                 switch (type) {
                     case "update": //this type means its an updated process variable;
-
-                try { // added try catch here to catch parsing errors
+                    try { // added try catch here to catch parsing errors
                         PV pvObj = mapper.treeToValue(node, PV.class);
-                        Object value = pvObj.getValue();
+                        Object value = pvObj.getValue(); //extract all field into local variable
                         if (value == null) {
                             System.out.println("PV has null value: " + pvObj.getPv());
                             break;
                         }
+                          String pvName = pvObj.getPv();
+                          String severityStr = pvObj.getSeverity();
+                          String description = pvObj.getDescription();
+                          String units = pvObj.getUnits();
+                          int precision = pvObj.getPrecision();
+                          int seconds = pvObj.getSeconds();
+                          int nanos = pvObj.getNanos();
+
+                          double min = pvObj.getMin();
+                          double max = pvObj.getMax();
+                          double warnLow = pvObj.getWarn_low();
+                          double warnHigh = pvObj.getWarn_high();
+                          double alarmLow = pvObj.getAlarm_low();
+                          double alarmHigh = pvObj.getAlarm_high();
 
 
                         /*
@@ -113,26 +126,24 @@ public class SessionHandler extends WebSocketClient {
                          */
 
                         //if (vtype.equals("VDouble")) {
-                        Alarm alarm;
-                        try {
-                            AlarmSeverity severity = pvObj.getSeverity() != null
-                            ? AlarmSeverity.valueOf(pvObj.getSeverity())
-                            : AlarmSeverity.NONE;
-                             String description = pvObj.getDescription() != null ? pvObj.getDescription() : "";
-                             alarm = Alarm.of(severity, AlarmStatus.NONE, description);
-                            } catch (Exception e) {
-                                 System.err.println("Alarm.none()");
-                                 alarm = Alarm.none();
-                                }
-                            
-                        Time time;
-                        try {
-                            Instant instant = Instant.ofEpochSecond(pvObj.getSeconds(), pvObj.getNanos());
-                            time = Time.of(instant);
-                        } catch (Exception e) {
-                            System.err.println("Time.now()");
-                             time = Time.now();
-                             }
+                    Alarm alarm;
+                       try {
+                        AlarmSeverity severity = (severityStr != null) ? AlarmSeverity.valueOf(severityStr) : AlarmSeverity.NONE;
+                        alarm = Alarm.of(severity, AlarmStatus.NONE, description != null ? description : "");
+                    } catch (Exception e) {
+                        System.err.println("Alarm.none()");
+                        alarm = Alarm.none();
+                    }
+                    
+                    Time time;
+                    try {
+                        Instant instant = Instant.ofEpochSecond(seconds, nanos);
+                        time = Time.of(instant);
+                     } catch (Exception e) {
+                        System.err.println("Time.now()");
+                        time = Time.now();
+                    }
+
                            
 
                            // NumberFormat format = NumberFormats.precisionFormat(pvObj.getPrecision());
@@ -149,40 +160,39 @@ public class SessionHandler extends WebSocketClient {
 
 
                  //           VDouble value = VDouble.of((Double) pvObj.getValue(), alarm, time, display);
-                        Display display;
-                        try {
-                            Range displayRange = Range.of(pvObj.getMin(), pvObj.getMax());
-                            Range warningRange = Range.of(pvObj.getWarn_low(), pvObj.getWarn_high());
-                            Range alarmRange = Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high());
-                            Range controlRange = displayRange;
-                            String units = pvObj.getUnits() != null ? pvObj.getUnits() : "";
-                            NumberFormat format = NumberFormats.precisionFormat(pvObj.getPrecision() != 0 ? pvObj.getPrecision() : 2
-                            );
-                            display = Display.of(displayRange, alarmRange, warningRange, controlRange, units, format);
-                        } catch (Exception e) {
-                            System.err.println("Display.none()");
-                             display = Display.none();
-                            }
+                    Display display;
+                    try {
+                        Range displayRange = Range.of(min, max);
+                        Range warningRange = Range.of(warnLow, warnHigh);
+                        Range alarmRange = Range.of(alarmLow, alarmHigh);
+                        Range controlRange = displayRange;
+                        
+                        NumberFormat numberFormat = NumberFormats.precisionFormat(precision != 0 ? precision : 2);
+                        
+                        display = Display.of(displayRange, alarmRange, warningRange, controlRange, units != null ? units : "", numberFormat);
+                    } catch (Exception e) {
+                        System.err.println("Display.none()");
+                        display = Display.none();
+                    }
 
                             //Object Vvalue = VType.toVType(pvObj.getValue(), alarm, time, display);
                             //pvObj.setValue(value);
-                         VType vValue;
-                         try {
-                            vValue = VType.toVType(value, alarm, time, display);
-                            if (vValue == null) {
-                                System.out.println("Could not convert PV to VType: " + pvObj.getPv());
-                            } else {
-                                System.out.println("✅ Converted to VType: " + vValue);
-                                // TODO: Use vValue here (e.g., store, display, forward)
-                                }
+                    VType vValue;
+                    try {
+                        vValue = VType.toVType(value, alarm, time, display);
+                        if (vValue == null) {
+                            System.out.println("Could not convert PV to VType: " + pvName);
+                        } else {
+                            System.out.println("Converted to VType: " + vValue);
+                            // TODO: handle/store/display vValue
                             } catch (Exception e) {
                                 System.err.println("Error during VType conversion: " + e.getMessage());
-                             }
-                            } catch (Exception e) {
-                                System.err.println("Failed to process 'update' message: " + e.getMessage());
-                                e.printStackTrace();
                             }
-                            break;
+                        } catch (Exception e) {
+                            System.err.println("Failed to process 'update' message: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                        break;
 
                         //}
 
