@@ -87,18 +87,6 @@ public class SessionHandler extends WebSocketClient {
                         PV pvObj = mapper.treeToValue(node, PV.class);
                         System.out.println("✅😊 Parsed Message: " + pvObj);
                         break;
-                    case "ping":
-                        System.out.println("😀 received ping from server sending pong");
-                        try {
-                            String json = mapper.writeValueAsString(new Message("pong"));
-                            send(json);
-                        } catch (JsonProcessingException e) {
-                            throw new RuntimeException(e);
-                        }
-                        break;
-                    case "pong":
-                        Message pong = mapper.treeToValue(node, Message.class);
-                        System.out.println("parse pong: " + pong);
                     default:
                         System.out.println("⚠️ 😤Unknown message type: " + type);
                 }
