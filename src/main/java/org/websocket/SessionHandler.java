@@ -84,7 +84,22 @@ public class SessionHandler extends WebSocketClient {
                 String type = node.get("type").asText();
                 switch (type) {
                     case "update": //this type means its an updated process variable;
+
                         PV pvObj = mapper.treeToValue(node, PV.class);
+
+                        VtypeHash.setData(pvObj);
+
+                        System.out.println(VtypeHash.map);
+
+
+
+
+                        // PUT META DATA IN HASHMAP
+                        // RETRIEVE AND SET AS FIELDS
+
+
+
+
 
 
                         /*
@@ -106,7 +121,7 @@ public class SessionHandler extends WebSocketClient {
                          */
 
                         //if (vtype.equals("VDouble")) {
-                            Alarm alarm = Alarm.of(
+                           /* Alarm alarm = Alarm.of(
                                     AlarmSeverity.valueOf(pvObj.getSeverity()),
                                     AlarmStatus.NONE,
                                     pvObj.getDescription()
@@ -118,7 +133,7 @@ public class SessionHandler extends WebSocketClient {
                             NumberFormat format = NumberFormats.precisionFormat(pvObj.getPrecision());
 
                             // TO DO: ALARM PARAMETERS ARE CURRENTLY INCORRECT
-                            Display display = Display.of(Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high()), Range.of(pvObj.getWarn_low(), pvObj.getWarn_high()), Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high()), Range.of(pvObj.getMin(), pvObj.getMax()), pvObj.getUnits(), format);
+                            Display display = Display.of(Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high()), Range.of(pvObj.getWarn_low(), pvObj.getWarn_high()), Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high()), Range.of(pvObj.getMin(), pvObj.getMax()), pvObj.getUnits(), format);*/
                             //Parameters:
                         //displayRange - the display range
                         //warningRange - the warning range
@@ -130,7 +145,10 @@ public class SessionHandler extends WebSocketClient {
 
                  //           VDouble value = VDouble.of((Double) pvObj.getValue(), alarm, time, display);
 
-                            Object Vvalue = VType.toVType(pvObj.getValue(), alarm, time, display);
+
+                            Object Vvalue = VType.toVType(pvObj.getValue());
+                            //Object Vvalue = VType.toVType(pvObj.getValue(), alarm, time, display);
+  //                          System.out.println(Vvalue.toString());
                             //pvObj.setValue(value);
 
                         //}
