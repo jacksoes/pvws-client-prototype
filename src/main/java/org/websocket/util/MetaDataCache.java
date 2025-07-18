@@ -1,4 +1,4 @@
-package org.websocket;
+package org.websocket.util;
 
 import org.websocket.models.PV;
 
