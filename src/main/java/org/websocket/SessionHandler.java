@@ -84,77 +84,7 @@ public class SessionHandler extends WebSocketClient {
                 String type = node.get("type").asText();
                 switch (type) {
                     case "update": //this type means its an updated process variable;
-
                         PV pvObj = mapper.treeToValue(node, PV.class);
-
-                        VtypeHash.setData(pvObj);
-
-                        System.out.println(VtypeHash.map);
-
-
-
-
-                        // PUT META DATA IN HASHMAP
-                        // RETRIEVE AND SET AS FIELDS
-
-
-
-
-
-
-                        /*
-                        String nameKey = pvObj.getPv();
-                        String vtypeValue = pvObj.getVtype();
-                        if(!VtypeHash.map.containsKey(nameKey))
-                            VtypeHash.map.put(nameKey, vtypeValue);
-
-
-
-
-
-                        String name = pvObj.getPv();
-                        // at this point pv should always be in map with vtype
-                        System.out.println(VtypeHash.map.get(name));
-
-
-                        String vtype = VtypeHash.map.get(name);
-                         */
-
-                        //if (vtype.equals("VDouble")) {
-                           /* Alarm alarm = Alarm.of(
-                                    AlarmSeverity.valueOf(pvObj.getSeverity()),
-                                    AlarmStatus.NONE,
-                                    pvObj.getDescription()
-                            );
-
-                            Instant instant = Instant.ofEpochSecond(pvObj.getSeconds(), pvObj.getNanos());
-                            Time time = Time.of(instant);
-
-                            NumberFormat format = NumberFormats.precisionFormat(pvObj.getPrecision());
-
-                            // TO DO: ALARM PARAMETERS ARE CURRENTLY INCORRECT
-                            Display display = Display.of(Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high()), Range.of(pvObj.getWarn_low(), pvObj.getWarn_high()), Range.of(pvObj.getAlarm_low(), pvObj.getAlarm_high()), Range.of(pvObj.getMin(), pvObj.getMax()), pvObj.getUnits(), format);*/
-                            //Parameters:
-                        //displayRange - the display range
-                        //warningRange - the warning range
-                        //alarmRange - the alarm range
-                        //controlRange - the control range
-                        //units - the units
-                        //numberFormat - the preferred number format
-
-
-                 //           VDouble value = VDouble.of((Double) pvObj.getValue(), alarm, time, display);
-
-
-                            Object Vvalue = VType.toVType(pvObj.getValue());
-                            //Object Vvalue = VType.toVType(pvObj.getValue(), alarm, time, display);
-  //                          System.out.println(Vvalue.toString());
-                            //pvObj.setValue(value);
-
-                        //}
-
-
-
                         System.out.println("✅😊 Parsed Message: " + pvObj);
                         break;
                     case "ping":
