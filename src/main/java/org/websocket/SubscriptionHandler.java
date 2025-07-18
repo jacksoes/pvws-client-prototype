@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.websocket.models.Message;
 
 
-
 public class SubscriptionHandler {
 
     private final SessionHandler client;
@@ -41,9 +40,6 @@ public class SubscriptionHandler {
         client.send(json);
         subCache.uncachePVs(pvs);
     }
-
-
-
 
 
 }

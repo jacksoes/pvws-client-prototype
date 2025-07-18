@@ -1,14 +1,6 @@
 package org.websocket.models;
 
-// parsin for value might not be double.
 
-//NEED TO MAKE VALUE V-TYPE AND MIMIC CODE FROM PVWS FILE VTYPE2JSON : jsontoVtype
-
-
-//TODO:
-// IS STILL MISSING SOME FILEDS CHECk: localhost.com:8080/pv
-// IMPLEMENT VTYPE CASES
-// META DATA IS SENT ONCE BUT SHOULD BE MERGED WITH PROCEEDING UPDATES
 public class PV {
     private String type;
     private String pv;
@@ -41,7 +33,7 @@ public class PV {
 
 
     public void setReadonly(boolean readonly) {
-        this.readonly =  readonly;
+        this.readonly = readonly;
     }
 
     public boolean getReadonly() {
@@ -179,6 +171,7 @@ public class PV {
     public void setText(String text) {
         this.text = text;
     }
+
     public String getText() {
         return this.text;
     }
@@ -190,9 +183,6 @@ public class PV {
     public String getLabels() {
         return this.labels;
     }
-
-
-    
 
 
 }

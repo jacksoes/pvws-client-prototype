@@ -8,14 +8,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.CountDownLatch;
 
-public class App 
-{
-    public static void main( String[] args ) throws URISyntaxException, InterruptedException, JsonProcessingException {
+public class App {
+    public static void main(String[] args) throws URISyntaxException, InterruptedException, JsonProcessingException {
 
         URI serverUri = new URI("ws://localhost:8080/pvws/pv");
         CountDownLatch latch = new CountDownLatch(1);  // Wait until connected.
         ObjectMapper mapper = new ObjectMapper();
-        //SessionHandler client = getSessionHandler(serverUri, latch);
         SessionHandler client = new SessionHandler(serverUri, latch, mapper);
         client.connect();
 
@@ -29,10 +27,6 @@ public class App
         if (!latch.await(5, java.util.concurrent.TimeUnit.SECONDS)) {
             System.out.println("Timeout waiting for WebSocket connection.");
         }
-
-        // turn message into json object because server only accepts json.
-        //Message message = new Message("subscribe", new String[]{"pva://jack:calc1", "loc://x(4)"});
-
 
         //  MAYBE THIS HELPS SO THE FIRST MESSAGE IS NOT MISSED?
         Thread.sleep(500);
@@ -51,10 +45,7 @@ public class App
         //test.testing();
 
 
-
     }
-
-
 
 
 }
