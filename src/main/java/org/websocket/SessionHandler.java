@@ -167,9 +167,10 @@ public class SessionHandler extends WebSocketClient {
                         Range alarmRange = Range.of(alarmLow, alarmHigh);
                         Range controlRange = displayRange;
                         
+                        String unitStr = units != null ? units : "";
                         NumberFormat numberFormat = NumberFormats.precisionFormat(precision != 0 ? precision : 2);
                         
-                        display = Display.of(displayRange, alarmRange, warningRange, controlRange, units != null ? units : "", numberFormat);
+                        display = Display.of(displayRange, alarmRange, warningRange, controlRange, units != null ? units : "", unitStr, description, numberFormat);
                     } catch (Exception e) {
                         System.err.println("Display.none()");
                         display = Display.none();
