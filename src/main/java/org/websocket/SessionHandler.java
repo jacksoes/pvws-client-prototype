@@ -10,16 +10,7 @@ import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ServerHandshake;
 import org.websocket.models.PV;
 
-import org.epics.vtype.*;
-import org.epics.vtype.Alarm;
-import org.epics.vtype.Time;
-import org.epics.vtype.Display;
-import org.epics.util.stats.Range;
-import java.text.NumberFormat;
-import org.epics.util.text.NumberFormats;
-import java.time.Instant;
-import java.util.Timer;
-import java.util.TimerTask;
+
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -105,8 +96,10 @@ public class SessionHandler extends WebSocketClient {
                        //PVProcessor processor = new PVProcessor(mapper);
                         ///VType vValue = processor.processUpdate(node);
 
+                    PvProcessor.processUpdate(pvObj);
 
-                        System.out.println("🧊⛸️🥶: " + pvObj.toString());
+
+                    System.out.println("🧊⛸️🥶: " + pvObj.toString());
                     }
                     else // if meta data is missing resubscribe
                     {
