@@ -84,13 +84,33 @@ public class SessionHandler extends WebSocketClient {
                 String type = node.get("type").asText();
                 switch (type) {
                     case "update": //this type means its an updated process variable;
-                    try { // added try catch here to catch parsing errors
-                        PV pvObj = mapper.treeToValue(node, PV.class);
-                        Object value = pvObj.getValue(); //extract all field into local variable
-                        if (value == null) {
-                            System.out.println("PV has null value: " + pvObj.getPv());
-                            break;
-                        }
+                      PVProcessor processor = new PVProcessor(mapper);
+                        VType vValue = processor.processUpdate(node);
+                        if (vValue != null) {
+                    // You can now use vValue for display, storage, etc.
+                    System.out.println("Successfully processed VType: " + vValue);
+                } else {
+                    System.out.println("VType processing returned null.");
+                }
+                break;
+                default:
+                System.out.println("Unhandled message type: " + type);
+                break;
+            }
+        } else {
+        System.out.println("Message missing 'type' field: " + message)
+    }
+} catch (Exception e) {
+    System.err.println("Error parsing or processing message: " + e.getMessage());
+    e.printStackTrace();}
+}
+                    /* try { // added try catch here to catch parsing errors
+                       // PV pvObj = mapper.treeToValue(node, PV.class);
+                      //  Object value = pvObj.getValue(); //extract all field into local variable
+                     //   if (value == null) {
+                     //       System.out.println("PV has null value: " + pvObj.getPv());
+                      //      break;
+                      //  }
                           String pvName = pvObj.getPv();
                           String severityStr = pvObj.getSeverity();
                           String description = pvObj.getDescription();
@@ -126,7 +146,7 @@ public class SessionHandler extends WebSocketClient {
                          */
 
                         //if (vtype.equals("VDouble")) {
-                    Alarm alarm;
+                  /*  Alarm alarm;
                        try {
                         AlarmSeverity severity = (severityStr != null) ? AlarmSeverity.valueOf(severityStr) : AlarmSeverity.NONE;
                         alarm = Alarm.of(severity, AlarmStatus.NONE, description != null ? description : "");
@@ -160,7 +180,7 @@ public class SessionHandler extends WebSocketClient {
 
 
                  //           VDouble value = VDouble.of((Double) pvObj.getValue(), alarm, time, display);
-                    Display display;
+                 /*   Display display;
                     try {
                         Range displayRange = Range.of(min, max);
                         Range warningRange = Range.of(warnLow, warnHigh);
@@ -223,7 +243,7 @@ public class SessionHandler extends WebSocketClient {
         } catch (Exception e) {
             System.err.println("❌ Failed to parse message: " + e.getMessage());
         }
-    }
+    } */
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
