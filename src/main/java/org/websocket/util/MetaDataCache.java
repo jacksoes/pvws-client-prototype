@@ -1,11 +1,16 @@
 package org.websocket.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.websocket.SessionHandler;
 import org.websocket.models.PV;
 import org.websocket.models.PvMetaData;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
-
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 // HAVE OBJECT CALLED PV META DATA, AND MAP IT WITH THE JSON PARSER
@@ -23,6 +28,43 @@ public class MetaDataCache {
 
     public static void setData(PvMetaData pv) {
         pvMetaMap.putIfAbsent(pv.getPv(), pv);
+
+    }
+
+    public static void refetch(int resubscribeCount, PV pvObj, SessionHandler client){
+        final int MAX_SUBSCRIBE_ATTEMPTS = 5;
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ConcurrentHashMap<String, Integer> subscribeAttempts = new ConcurrentHashMap<>();
+
+
+        int currentAttempts = subscribeAttempts.getOrDefault(pvObj.getPv(), 0);
+        if (currentAttempts >= MAX_SUBSCRIBE_ATTEMPTS) {
+            System.err.println("Max subscribe attempts reached for PV: " + pvObj.getPv());
+            return;
+        }
+
+        System.out.println("Missed first message for: " + pvObj.getPv() + ": attempt " + (currentAttempts + 1));
+        try {
+            subscribeAttempts.put(pvObj.getPv(), currentAttempts + 1);
+            client.unSubscribeClient(new String[]{pvObj.getPv()});
+
+            scheduler.schedule(() -> {
+                try {
+                    client.subscribeClient(new String[]{pvObj.getPv()});
+                    System.out.println("Got meta data for: " + pvObj.getPv() + "on resub💪💪💪");
+                    if(MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
+                        System.out.println("Got meta data for: " + pvObj.getPv() + "on resub💪💪💪");
+                    }
+
+                } catch (JsonProcessingException e) {
+                    System.err.println("Error during scheduled resubscribe: " + e.getMessage());
+                }
+            }, 5, TimeUnit.SECONDS); // retry after 5 seconds
+        } catch (JsonProcessingException e) {
+            System.err.println("Error unsubscribing or resubscribing PV: " + e.getMessage());
+        }
+
+
 
     }
 
