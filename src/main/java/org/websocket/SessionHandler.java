@@ -37,6 +37,8 @@ public class SessionHandler extends WebSocketClient {
     private final ObjectMapper mapper;
     private final CountDownLatch latch;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ConcurrentHashMap<String, Integer> subscribeAttempts = new ConcurrentHashMap<>();
+    private final int MAX_SUBSCRIBE_ATTEMPTS = 5;
     private boolean reconnecting = false;
 
     private SubscriptionHandler subHandler;
@@ -85,7 +87,7 @@ public class SessionHandler extends WebSocketClient {
             if(node.has("vtype")) // if message has vtype field it is first message with meta-data
             {
                 PvMetaData pvMeta = mapper.treeToValue(node, PvMetaData.class);
-                MetaDataCache.setData(pvMeta);
+                MetaDataCache.setData(pvMeta); // comment this line out to test missing  
             }
 
 
@@ -124,19 +126,37 @@ public class SessionHandler extends WebSocketClient {
 
                     //every PV should have corresponding meta data if its not their resubscirbe and ignore message
                     if(!MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
-
-                        System.out.println("Missed first message for: " + pvObj.getPv());
-                        this.unSubscribeClient(new String[]{pvObj.getPv()});
-                        this.subscribeClient(new String[]{pvObj.getPv()});
-                        return;
-
-                    }
-                    else // if meta data is not missing continue
-                    {
-                        if(node.has("severity"))// if severity changes set it in cached value
-                        {
-                            MetaDataCache.pvMetaMap.get(pvObj.getPv()).setSeverity(node.get("severity").asText());
+                        String pv = pvObj.getPv();
+                        int currentAttempts = subscribeAttempts.getOrDefault(pv, 0);
+                        if (currentAttempts >= MAX_SUBSCRIBE_ATTEMPTS) {
+                            System.err.println("Max subscribe attempts reached for PV: " + pv); 
+                            return;
                         }
+                        
+                        System.out.println("Missed first message for: " + pv + ": attempt " + (currentAttempts + 1));
+                        try {
+                            subscribeAttempts.put(pv, currentAttempts + 1);
+                            this.unSubscribeClient(new String[]{pvObj.getPv()});
+                            
+                            scheduler.schedule(() -> {
+                                try {
+                                    this.subscribeClient(new String[]{pvObj.getPv()});
+                                } catch (JsonProcessingException e) {
+                                    System.err.println("Error during scheduled resubscribe: " + e.getMessage());
+                               }
+                            }, 5, TimeUnit.SECONDS); // retry after 5 seconds 
+                            } catch (JsonProcessingException e) {
+                                 System.err.println("Error unsubscribing or resubscribing PV: " + e.getMessage());
+                                }
+                                return;
+                            }
+                            else // if meta data is not missing continue
+                            {
+                                subscribeAttempts.remove(pvObj.getPv()); // reset retry count if we got the meta data
+                                if(node.has("severity"))// if severity changes set it in cached value
+                                {
+                                    MetaDataCache.pvMetaMap.get(pvObj.getPv()).setSeverity(node.get("severity").asText());
+                                }
                         //merges class together
 
                         JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
