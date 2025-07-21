@@ -1,4 +1,4 @@
-package org.websocket;
+package org.websocket.util;
 
 import java.util.Collections;
 import java.util.HashSet;

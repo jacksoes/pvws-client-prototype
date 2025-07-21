@@ -2,20 +2,25 @@ package org.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.websocket.models.Message;
+import org.websocket.util.PVcache;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.CountDownLatch;
 
-public class App 
-{
-    public static void main( String[] args ) throws URISyntaxException, InterruptedException, JsonProcessingException {
+
+
+// PIPELINE: 1. RECEIVED MESSAGE, 2. MAP TO OBJECT AND META DATA, 3. CREATE VTYPE
+// FIND WAY SO FIRST MESSAGE IS ALWAYS THE ONE WITH MET DATA
+
+// potentional solution: THROW AWAY MESSAGES TILL ONE IS GOTTEN WITH METADATA
+//1, GET UPDATE 2. CHECK IT HAS META DATA TYPE 3. POPULATE CACHE. 4. IF CACHE IS NOT POPULATED THEN THROW AWAY MESSAGE
+public class App {
+    public static void main(String[] args) throws URISyntaxException, InterruptedException, JsonProcessingException {
 
         URI serverUri = new URI("ws://localhost:8080/pvws/pv");
         CountDownLatch latch = new CountDownLatch(1);  // Wait until connected.
         ObjectMapper mapper = new ObjectMapper();
-        //SessionHandler client = getSessionHandler(serverUri, latch);
         SessionHandler client = new SessionHandler(serverUri, latch, mapper);
         client.connect();
 
@@ -30,15 +35,14 @@ public class App
             System.out.println("Timeout waiting for WebSocket connection.");
         }
 
-        // turn message into json object because server only accepts json.
-        //Message message = new Message("subscribe", new String[]{"pva://jack:calc1", "loc://x(4)"});
-
-
         //  MAYBE THIS HELPS SO THE FIRST MESSAGE IS NOT MISSED?
         Thread.sleep(500);
 
 
-        String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
+        //String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
+
+
+        String[] PVs = new String[]{"sim://noise"};
         client.subscribeClient(PVs);
 
         Thread.sleep(5000000);
@@ -51,10 +55,7 @@ public class App
         //test.testing();
 
 
-
     }
-
-
 
 
 }
