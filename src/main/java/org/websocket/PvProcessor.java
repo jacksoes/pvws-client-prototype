@@ -3,24 +3,36 @@ package org.websocket;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.epics.vtype.*;
-import org.epics.util.time.Timestamp;
-import org.epics.util.time.TimestampFormat;
+//import org.epics.util.time.Timestamp;
+//import org.epics.util.time.TimestampFormat;
 import org.epics.util.number.*;
+
+
+import org.epics.vtype.*;
+import org.epics.vtype.Alarm;
+import org.epics.vtype.Time;
+import org.epics.vtype.Display;
+import org.epics.util.stats.Range;
+import java.text.NumberFormat;
+import org.epics.util.text.NumberFormats;
+import org.websocket.models.PV;
+
+import java.time.Instant;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import java.time.Instant;
 import java.text.NumberFormat;
 
-public class PVProcessor {
+public class PvProcessor {
 
-    private final ObjectMapper mapper;
 
-    public PVProcessor(ObjectMapper mapper) {
-        this.mapper = mapper;
+    public PvProcessor() {
+
     }
 
-    public VType processUpdate(JsonNode node) {
+    public static VType processUpdate(PV pvObj) {
         try {
-            PV pvObj = mapper.treeToValue(node, PV.class);
             Object value = pvObj.getValue();
             if (value == null) {
                 System.out.println("PV has null value: " + pvObj.getPv());
@@ -73,7 +85,7 @@ public class PVProcessor {
                 NumberFormat numberFormat = NumberFormats.precisionFormat(precision != 0 ? precision : 2);
                 String unitStr = (units != null) ? units : "";
 
-                display = Display.of(displayRange, alarmRange, warningRange, controlRange, unitStr, unitStr, description, numberFormat);
+                display = Display.of(displayRange, alarmRange, warningRange, controlRange, unitStr, numberFormat,  description);
             } catch (Exception e) {
                 System.err.println("Display.none()");
                 display = Display.none();
