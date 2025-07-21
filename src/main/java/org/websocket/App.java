@@ -42,7 +42,7 @@ public class App {
         //String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
 
 
-        String[] PVs = new String[]{"sim://noise"};
+        String[] PVs = new String[]{"sim://noiseWaveForm"};
         client.subscribeClient(PVs);
 
         Thread.sleep(5000000);
