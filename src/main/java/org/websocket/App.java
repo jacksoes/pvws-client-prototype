@@ -8,6 +8,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.CountDownLatch;
 
+
+
+// PIPELINE: 1. RECEIVED MESSAGE, 2. MAP TO OBJECT AND META DATA, 3. CREATE VTYPE
+// FIND WAY SO FIRST MESSAGE IS ALWAYS THE ONE WITH MET DATA
+
+// potentional solution: THROW AWAY MESSAGES TILL ONE IS GOTTEN WITH METADATA
+//1, GET UPDATE 2. CHECK IT HAS META DATA TYPE 3. POPULATE CACHE. 4. IF CACHE IS NOT POPULATED THEN THROW AWAY MESSAGE
 public class App {
     public static void main(String[] args) throws URISyntaxException, InterruptedException, JsonProcessingException {
 
@@ -32,7 +39,10 @@ public class App {
         Thread.sleep(500);
 
 
-        String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
+        //String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
+
+
+        String[] PVs = new String[]{"sim://noise"};
         client.subscribeClient(PVs);
 
         Thread.sleep(5000000);

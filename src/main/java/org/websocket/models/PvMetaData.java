@@ -1,11 +1,12 @@
 package org.websocket.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-//CHECK FOR EXISTING MODEL STORING JUST META DATA
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class PvMetaData {
 
-public class PV {
-    private String type;
     private String pv;
+
     private String severity;
     private String vtype;
     private String units;
@@ -14,9 +15,6 @@ public class PV {
     private String labels; // WILL THIS BE A STRING?
 
 
-    private Object value;
-    private int seconds;
-    private int nanos;
     private int precision;
 
     private double min;
@@ -27,36 +25,19 @@ public class PV {
     private double alarm_high;
     private boolean readonly;
 
+    public PvMetaData(){
 
-    public PV() {
+
     }
 
-    // Getters and Setters
-
-
-    public void setReadonly(boolean readonly) {
-        this.readonly = readonly;
-    }
-
-    public boolean getReadonly() {
-        return readonly;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getPv() {
+    public String getPv (){
         return pv;
     }
 
-    public void setPv(String pv) {
+    public void setPv(String pv){
         this.pv = pv;
     }
+
 
     public String getSeverity() {
         return severity;
@@ -90,28 +71,20 @@ public class PV {
         this.description = description;
     }
 
-    public Object getValue() {
-        return value;
+    public String getText() {
+        return text;
     }
 
-    public void setValue(Object value) {
-        this.value = value;
+    public void setText(String text) {
+        this.text = text;
     }
 
-    public int getSeconds() {
-        return seconds;
+    public String getLabels() {
+        return labels;
     }
 
-    public void setSeconds(int seconds) {
-        this.seconds = seconds;
-    }
-
-    public int getNanos() {
-        return nanos;
-    }
-
-    public void setNanos(int nanos) {
-        this.nanos = nanos;
+    public void setLabels(String labels) {
+        this.labels = labels;
     }
 
     public int getPrecision() {
@@ -170,37 +143,25 @@ public class PV {
         this.alarm_high = alarm_high;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public boolean isReadonly() {
+        return readonly;
     }
 
-    public String getText() {
-        return this.text;
-    }
-
-    public void setLabels(String labels) {
-        this.labels = labels;
-    }
-
-    public String getLabels() {
-        return this.labels;
+    public void setReadonly(boolean readonly) {
+        this.readonly = readonly;
     }
 
 
     @Override
     public String toString() {
-        return "PV{" +
-                "type='" + type + '\'' +
-                ", pv='" + pv + '\'' +
+        return "PvMetaData{" +
+                "pv='" + pv + '\'' +
                 ", severity='" + severity + '\'' +
                 ", vtype='" + vtype + '\'' +
                 ", units='" + units + '\'' +
                 ", description='" + description + '\'' +
                 ", text='" + text + '\'' +
                 ", labels='" + labels + '\'' +
-                ", value=" + value +
-                ", seconds=" + seconds +
-                ", nanos=" + nanos +
                 ", precision=" + precision +
                 ", min=" + min +
                 ", max=" + max +
@@ -211,7 +172,6 @@ public class PV {
                 ", readonly=" + readonly +
                 '}';
     }
-
 
 }
 

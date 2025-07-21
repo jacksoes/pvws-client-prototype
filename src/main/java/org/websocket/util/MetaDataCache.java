@@ -1,18 +1,37 @@
 package org.websocket.util;
 
 import org.websocket.models.PV;
+import org.websocket.models.PvMetaData;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
 
-public class MetaDataCache {
-    public static final HashMap<String, HashMap<String, Object>> pvMetaMap = new HashMap<>();
 
-    public static void setData(PV pvObj) {
-        pvMetaMap.putIfAbsent(pvObj.getPv(), initializeMetaFields(pvObj));
+
+// HAVE OBJECT CALLED PV META DATA, AND MAP IT WITH THE JSON PARSER
+// AND NEW HASH MAP <sTRING, PVMETADATA.CLASS>
+
+
+//How to make sure first message is not missed?
+//  1. unsubscribe and resubscribe
+// OR 2. multiple unsubscripe and resubscribe
+
+
+
+public class MetaDataCache {
+    public static final HashMap<String, PvMetaData> pvMetaMap = new HashMap<>();
+
+    public static void setData(PvMetaData pv) {
+        pvMetaMap.putIfAbsent(pv.getPv(), pv);
 
     }
 
+
+    public static String tString(){
+        return pvMetaMap.get("sim://noise").toString();
+
+    }
+    /*
     public static HashMap<String, Object> initializeMetaFields(PV pvObj) {
         //create hashmap with meta-data fields only sent on first pv update
         HashMap<String, Object> metaFieldsMap = new HashMap<>();
@@ -61,7 +80,7 @@ public class MetaDataCache {
         }
         return metaFieldsMap;
 
-    }
+    }*/
 
 
 

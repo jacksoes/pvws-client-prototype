@@ -27,6 +27,11 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.concurrent.*;
 import org.java_websocket.framing.PingFrame;
+import org.websocket.models.PvMetaData;
+import org.websocket.util.MetaDataCache;
+
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
+
 
 public class SessionHandler extends WebSocketClient {
     private final ObjectMapper mapper;
@@ -64,6 +69,7 @@ public class SessionHandler extends WebSocketClient {
     }
 
     //AUTHENTICATION MIGHT BE NEEDED FOR NON-STOMP
+
     @Override
     public void onMessage(String message) {
 
@@ -71,18 +77,44 @@ public class SessionHandler extends WebSocketClient {
         try {
             JsonNode node = mapper.readTree(message);
             // each message from server has type, type of update will look something like this: {"type":"update","pv":"sim://sine","ts":"2025-06-30T19:39:50.
-            if (node.has("type")) {
-                String type = node.get("type").asText();
-                switch (type) {
-                    case "update": //this type means its an updated process variable;
-                        PV pvObj = mapper.treeToValue(node, PV.class);
-                        System.out.println("✅😊 Parsed Message: " + pvObj);
+            if(node.has("vtype")) // if message has vtype field it is first message with meta-data
+            {
+                PvMetaData pvMeta = mapper.treeToValue(node, PvMetaData.class);
+                MetaDataCache.setData(pvMeta);
+            }
+
+
+            // message recieved should always have a type field
+            String type = node.get("type").asText();
+            switch (type) {
+                case "update": //this type means its an updated process variable;
+                    PV pvObj = mapper.treeToValue(node, PV.class);
+
+                    if(MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) { //every PV should have corresponding meta data
+
+                        if(node.has("severity"))// if severity changes set it in cached value
+                        {
+                            MetaDataCache.pvMetaMap.get(pvObj.getPv()).setSeverity(node.get("severity").asText());
+                        }
+
+                        //merges class together
+
+                        JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
+                        mapper.readerForUpdating(pvObj).readValue(nodeMerge);
+
+
+                        System.out.println("🧊⛸️🥶: " + pvObj.toString());
+                    }
+                    else // if meta data is missing resubscribe
+                    {
+                        System.out.println("Missed first message for: " + pvObj.getPv());
+                        this.unSubscribeClient(new String[]{pvObj.getPv()});
+                        this.subscribeClient(new String[]{pvObj.getPv()});
+                    }
                         break;
                     default:
                         System.out.println("⚠️ 😤Unknown message type: " + type);
-                }
-            } else {
-                System.out.println("⚠️ Message without 'type': " + message);
+
             }
 
         } catch (Exception e) {
