@@ -1,13 +1,9 @@
 package org.websocket;
 
 
-import java.util.Base64;
-
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.framing.Framedata;
@@ -15,25 +11,20 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.websocket.models.PV;
 
 
-import java.math.BigDecimal;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.*;
 import org.java_websocket.framing.PingFrame;
 import org.websocket.models.PvMetaData;
-import org.websocket.util.Base64BufferDeserializer;
 import org.websocket.util.MetaDataCache;
 
 import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 
 
 public class SessionHandler extends WebSocketClient {
-
-    public boolean gotFirst = false;
     private final ObjectMapper mapper;
     private final CountDownLatch latch;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -41,7 +32,7 @@ public class SessionHandler extends WebSocketClient {
 
     private SubscriptionHandler subHandler;
 
-    //detect missing heartbeats
+    //detect missing heartbeats 
     private ScheduledFuture<?> heartbeatCheck;
     private volatile long lastPongTime = System.currentTimeMillis();
     private static final long HEARTBEAT_INTERVAL = 10000;  // 10 seconds
@@ -72,15 +63,10 @@ public class SessionHandler extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
-        if(!gotFirst){
-            gotFirst = true;
-            return;
-        }
 
         System.out.println("📨👍👍 Received: " + message);
         try {
             JsonNode node = mapper.readTree(message);
-
             // each message from server has type, type of update will look something like this: {"type":"update","pv":"sim://sine","ts":"2025-06-30T19:39:50.
             if(node.has("vtype")) // if message has vtype field it is first message with meta-data
             {
@@ -95,55 +81,31 @@ public class SessionHandler extends WebSocketClient {
                 case "update": //this type means its an updated process variable;
                     PV pvObj = mapper.treeToValue(node, PV.class);
 
-                    //check for encoded array field and if there is set value to decoded array.
-                    if (node.has("b64dbl")) {
-                        String base64Encoded = node.get("b64dbl").asText();
-                        double[] doubles = Base64BufferDeserializer.decodeDoubles(base64Encoded);
-                        pvObj.setValue(doubles);
-                    }
-                    else if (node.has("b64flt")) {
-                        String base64Encoded = node.get("b64flt").asText();
-                        float[] floats = Base64BufferDeserializer.decodeFloats(base64Encoded);
-                        pvObj.setValue(floats);
-                    }
-                    else if (node.has("b64int")) {
-                        String base64Encoded = node.get("b64int").asText();
-                        int[] ints = Base64BufferDeserializer.decodeInts(base64Encoded);
-                        pvObj.setValue(ints);
-                    }
-                    else if (node.has("b64srt")) {
-                        String base64Encoded = node.get("b64srt").asText();
-                        short[] shorts = Base64BufferDeserializer.decodeShorts(base64Encoded);
-                        pvObj.setValue(shorts);
-                    }
-                    else if (node.has("b64byt")) {
-                        String base64Encoded = node.get("b64byt").asText();
-                        byte[] bytes = Base64.getDecoder().decode(base64Encoded);
-                        pvObj.setValue(bytes);
-                    }
+                    if(MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) { //every PV should have corresponding meta data
 
-                    //every PV should have corresponding meta data if its not their resubscirbe and ignore message
-                    if(!MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
-
-                        System.out.println("Missed first message for: " + pvObj.getPv());
-                        this.unSubscribeClient(new String[]{pvObj.getPv()});
-                        this.subscribeClient(new String[]{pvObj.getPv()});
-                        return;
-
-                    }
-                    else // if meta data is not missing continue
-                    {
                         if(node.has("severity"))// if severity changes set it in cached value
                         {
                             MetaDataCache.pvMetaMap.get(pvObj.getPv()).setSeverity(node.get("severity").asText());
                         }
+
                         //merges class together
 
                         JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
                         mapper.readerForUpdating(pvObj).readValue(nodeMerge);
+                      // will need to make PVProcessor designed for class or use nodes instead
+                       //PVProcessor processor = new PVProcessor(mapper);
+                        ///VType vValue = processor.processUpdate(node);
 
-                        PvProcessor.processUpdate(pvObj);
-                        System.out.println("🧊⛸️🥶: " + pvObj.toString());
+                    PvProcessor.processUpdate(pvObj);
+
+
+                    System.out.println("🧊⛸️🥶: " + pvObj.toString());
+                    }
+                    else // if meta data is missing resubscribe
+                    {
+                        System.out.println("Missed first message for: " + pvObj.getPv());
+                        this.unSubscribeClient(new String[]{pvObj.getPv()});
+                        this.subscribeClient(new String[]{pvObj.getPv()});
                     }
                         break;
                     default:
