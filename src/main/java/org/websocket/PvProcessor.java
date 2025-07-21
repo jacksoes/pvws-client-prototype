@@ -39,7 +39,7 @@ public class PvProcessor {
                 return null;
             }
 
-            // Extract fields
+            //Extract fields
             String pvName = pvObj.getPv();
             String severityStr = pvObj.getSeverity();
             String description = pvObj.getDescription();

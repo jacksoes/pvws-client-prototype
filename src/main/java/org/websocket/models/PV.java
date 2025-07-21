@@ -1,8 +1,10 @@
 package org.websocket.models;
 
 
-//CHECK FOR EXISTING MODEL STORING JUST META DATA
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+//CHECK FOR EXISTING MODEL STORING JUST META DATA
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PV {
     private String type;
     private String pv;
