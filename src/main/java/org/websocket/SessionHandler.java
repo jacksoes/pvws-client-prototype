@@ -101,6 +101,9 @@ public class SessionHandler extends WebSocketClient {
 
                         JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
                         mapper.readerForUpdating(pvObj).readValue(nodeMerge);
+                      // will need to make PVProcessor designed for class or use nodes instead
+                       //PVProcessor processor = new PVProcessor(mapper);
+                        ///VType vValue = processor.processUpdate(node);
 
 
                         System.out.println("🧊⛸️🥶: " + pvObj.toString());
@@ -116,11 +119,10 @@ public class SessionHandler extends WebSocketClient {
                         System.out.println("⚠️ 😤Unknown message type: " + type);
 
             }
-
         } catch (Exception e) {
-            System.err.println("❌ Failed to parse message: " + e.getMessage());
+            System.err.println("Error parsing or processing message: " + e.getMessage());
+            e.printStackTrace();}
         }
-    }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
