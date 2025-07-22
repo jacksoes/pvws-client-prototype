@@ -71,22 +71,18 @@ public class SessionHandler extends WebSocketClient {
     @Override
     public void onMessage(String message) {
 
-        if(testCount < 3)
-        {
-            testCount++;
-            return;
-        }
 
         System.out.println("📨👍👍 Received: " + message);
 
         try {
             JsonNode node = mapper.readTree(message);
             // each message from server has type, type of update will look something like this: {"type":"update","pv":"sim://sine","ts":"2025-06-30T19:39:50.
-            if(node.has("vtype")) // if message has vtype field it is first message with meta-data
+            if(node.has("vtype") && testCount > 2) // if message has vtype field it is first message with meta-data
             {
                 PvMetaData pvMeta = mapper.treeToValue(node, PvMetaData.class);
                 MetaDataCache.setData(pvMeta); // comment this line out to test missing
             }
+            testCount++;
 
 
             // message recieved should always have a type field
@@ -103,7 +99,8 @@ public class SessionHandler extends WebSocketClient {
                     //every PV should have corresponding meta data if its not their resubscirbe and ignore message
                     if(!MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
 
-                        MetaDataCache.refetch(0, pvObj, this);
+                        final int MAX_SUBSCRIBE_ATTEMPTS = 5;
+                        MetaDataCache.refetch(MAX_SUBSCRIBE_ATTEMPTS, pvObj, this);
 
                             }
                             else // if meta data is not missing continue
