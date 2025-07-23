@@ -3,6 +3,7 @@ package org.websocket;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.websocket.handlers.HeartbeatHandler;
+import org.websocket.handlers.ReconnectHandler;
 import org.websocket.handlers.SessionHandler;
 import org.websocket.handlers.SubscriptionHandler;
 import org.websocket.util.PVcache;
@@ -30,6 +31,9 @@ public class App {
         client.subscribeClient(PVs);
 
         Thread.sleep(5000000);
+
+//        scheduler.shutdownNow(); //disables auto reconnect SCHEDULER SHOULD BE SHUTDOWN WHEN CLIENT IS CLOSEED
+
         client.close();
 
     }
@@ -40,8 +44,9 @@ public class App {
         SessionHandler client = new SessionHandler(serverUri, latch, mapper);
 
 
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-        setHandlers(client, mapper);
+        setHandlers(client, mapper, scheduler);
 
         client.connect();
 
@@ -54,28 +59,32 @@ public class App {
 
     }
 
-    public static void setHandlers(SessionHandler client, ObjectMapper mapper) throws URISyntaxException, InterruptedException, JsonProcessingException {
-        HeartbeatHandler heartbeatHandler = initializeHeartbeatHandler(client);
+    public static void setHandlers(SessionHandler client, ObjectMapper mapper, ScheduledExecutorService scheduler ) throws URISyntaxException, InterruptedException, JsonProcessingException {
+        HeartbeatHandler heartbeatHandler = initializeHeartbeatHandler(client, scheduler);
         client.setHeartbeatHandler(heartbeatHandler);
 
         SubscriptionHandler subHandler = initializeSubHandler(client, mapper);
         client.setSubscriptionHandler(subHandler);
 
+        ReconnectHandler reconnectHandler = initializeReconnectHandler(client, scheduler);
+        client.setReconnectHandler(reconnectHandler);
+
     }
 
 
-    private static HeartbeatHandler initializeHeartbeatHandler(SessionHandler client) {
+    private static HeartbeatHandler initializeHeartbeatHandler(SessionHandler client, ScheduledExecutorService scheduler ) {
         final long HEARTBEAT_INTERVAL = 10000;  // 10 seconds
         final long HEARTBEAT_TIMEOUT = 15000;   // 15 seconds
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         return new HeartbeatHandler(client, scheduler, HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT);
     }
 
     private static SubscriptionHandler initializeSubHandler(SessionHandler client, ObjectMapper mapper) throws URISyntaxException, InterruptedException, JsonProcessingException {
         PVcache cache = new PVcache();
-        SubscriptionHandler subHandler = new SubscriptionHandler(client, cache, mapper);
-        return subHandler;
+        return new SubscriptionHandler(client, cache, mapper);
+    }
 
+    private static ReconnectHandler initializeReconnectHandler(SessionHandler client, ScheduledExecutorService scheduler){
+        return new ReconnectHandler(client, scheduler);
     }
 
 

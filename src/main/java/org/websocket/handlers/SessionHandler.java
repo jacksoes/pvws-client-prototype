@@ -26,14 +26,9 @@ public class SessionHandler extends WebSocketClient {
 
     private final ObjectMapper mapper;
     private final CountDownLatch latch;
-    private boolean reconnecting = false;
-
     private SubscriptionHandler subHandler;
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
     private HeartbeatHandler heartbeatHandler;
-
-    public int testCount = 0;
+    private ReconnectHandler reconnectHandler;
 
 
     public SessionHandler(URI serverUri, CountDownLatch latch, ObjectMapper mapper) {
@@ -47,8 +42,7 @@ public class SessionHandler extends WebSocketClient {
         try {
             System.out.println("Connected to server");
             latch.countDown();
-            reconnecting = false;
-            //handleHeartbeat();
+            reconnectHandler.resetStatus();
             heartbeatHandler.start(this);
         } catch (Exception e) {
             System.err.println("Exception in onOpen: " + e.getMessage());
@@ -65,12 +59,9 @@ public class SessionHandler extends WebSocketClient {
         try {
             JsonNode node = mapper.readTree(message);
             // each message from server has type, type of update will look something like this: {"type":"update","pv":"sim://sine","ts":"2025-06-30T19:39:50.
-            if(node.has("vtype") && testCount > 2) // if message has vtype field it is first message with meta-data
-            {
-                PvMetaData pvMeta = mapper.treeToValue(node, PvMetaData.class);
-                MetaDataCache.setData(pvMeta); // comment this line out to test missing
-            }
-            testCount++;
+            PvMetaData pvMeta = mapper.treeToValue(node, PvMetaData.class);
+            MetaDataCache.setData(pvMeta); // comment this line out to test missing
+
 
 
             // message recieved should always have a type field
@@ -128,59 +119,15 @@ public class SessionHandler extends WebSocketClient {
     @Override
     public void onError(Exception ex) {
         System.err.println("🚨 WebSocket Error: " + ex.getMessage());
-        //stopHeartbeat();
         heartbeatHandler.stop();
         attemptReconnect();
     }
 
-    public void attemptReconnect() {
-        if (!reconnecting) {
-            reconnecting = true;
 
-            Runnable reconnectTask = new Runnable() {
-                @Override
-                public void run() {
-                    System.out.println("Attempting to reconnect...");
-                    try {
-                        reconnectBlocking();  // Blocks until connected or fails
-                        subHandler.subscribeCache();
-                        if (isOpen()) {
-                            System.out.println("Reconnected");
-                            reconnecting = false;
-                            subHandler.subscribeCache();
-                            return; // stop retrying
-                        } else {
-                            throw new IllegalStateException("Connection not open after reconnect attempt.");
-                        }
-                    } catch (InterruptedException e) {
-                        System.err.println("Reconnect interrupted: " + e.getMessage());
-                        scheduleRetry(this);
-                    } catch (JsonProcessingException e) {
-                        throw new RuntimeException(e);
-                    } catch (Exception e) {
-                        System.err.println("Reconnect failed: " + e.getMessage());
-                        scheduleRetry(this);
-                    }
-                }
 
-                private void scheduleRetry(Runnable task) {
-                    System.out.println("Will retry in 10 seconds...");
-                    scheduler.schedule(task, 10, TimeUnit.SECONDS);
-                }
-            };
 
-            scheduler.execute(reconnectTask); // First try immediately
-        }
-    }
-
-    private void handleHeartbeat() {
-        System.out.println(" handleHeartbeat() called");
-        //lastPongTime = System.currentTimeMillis();
-        heartbeatHandler.setLastPongTime(System.currentTimeMillis());
-    }
 
     public void closeClient() {
-        scheduler.shutdownNow(); //disables auto reconnect
         this.close();
     }
 
@@ -193,12 +140,20 @@ public class SessionHandler extends WebSocketClient {
         this.heartbeatHandler = heartbeatHandler;
     }
 
+    public void setReconnectHandler(ReconnectHandler reconnectHandler) {
+        this.reconnectHandler = reconnectHandler;
+    }
+
     public void subscribeClient(String[] pvs) throws JsonProcessingException {
         subHandler.subscribe(pvs);
     }
 
     public void unSubscribeClient(String[] pvs) throws JsonProcessingException {
         subHandler.unSubscribe(pvs);
+    }
+
+    public void attemptReconnect(){
+        this.reconnectHandler.attemptReconnect();
     }
 
     @Override
@@ -211,31 +166,10 @@ public class SessionHandler extends WebSocketClient {
     public void onWebsocketPong(WebSocket conn, Framedata f) {
         System.out.println("Received Pong frame"); // you could also comment this out to test the heartbeat timeout just for visual clarity
         super.onWebsocketPong(conn, f);
-        //lastPongTime = System.currentTimeMillis();  // update last pong time- comment this line out to test heartbeat timeout
-
         heartbeatHandler.setLastPongTime(System.currentTimeMillis());
     }
 
 
-    public void sendPingToServer() {
-        try {
-            PingFrame ping = new PingFrame();
-            // Optional: set payload data (must be <= 125 bytes)
-            ping.setPayload(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
-
-            this.sendFrame(ping);  // send the ping frame manually
-            System.out.println("Ping frame sent to server");
-        } catch (Exception e) {
-            System.err.println("Failed to send ping: " + e.getMessage());
-        }
-    }
-
-    private void stopHeartbeat() {
-       // if (heartbeatCheck != null && !heartbeatCheck.isCancelled()) {
-         //   heartbeatCheck.cancel(true);
-       // }
-
-    }
 
 
 }
