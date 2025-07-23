@@ -24,49 +24,62 @@ public class App {
     public static void main(String[] args) throws URISyntaxException, InterruptedException, JsonProcessingException {
 
         URI serverUri = new URI("ws://localhost:8080/pvws/pv");
-        CountDownLatch latch = new CountDownLatch(1);  // Wait until connected.
-        ObjectMapper mapper = new ObjectMapper();
-
-        SessionHandler client = new SessionHandler(serverUri, latch, mapper);
-        client.connect();
-        PVcache cache = new PVcache();
-        SubscriptionHandler subHandler = new SubscriptionHandler(client, cache, mapper);
-        client.setSubscriptionHandler(subHandler);
-
-        final long HEARTBEAT_INTERVAL = 10000;  // 10 seconds
-        final long HEARTBEAT_TIMEOUT = 15000;
-        ScheduledExecutorService schedulerService = Executors.newSingleThreadScheduledExecutor();
-        HeartbeatHandler heartbeatHandler = new HeartbeatHandler(client, schedulerService, HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT);
-
-        client.setHeartbeatHandler(heartbeatHandler);
-
-
-        // Wait up to 5 seconds for the connection to open
-        if (!latch.await(5, java.util.concurrent.TimeUnit.SECONDS)) {
-            System.out.println("Timeout waiting for WebSocket connection.");
-        }
-
-        //  MAYBE THIS HELPS SO THE FIRST MESSAGE IS NOT MISSED?
-        Thread.sleep(500);
-
-
-        //String[] PVs = new String[]{"sim://sine", "loc://x(4)"};
-
+        SessionHandler client = initializeClient(serverUri);
 
         String[] PVs = new String[]{"sim://noiseWaveForm"};
         client.subscribeClient(PVs);
 
         Thread.sleep(5000000);
-
         client.close();
 
+    }
 
-        //TestLatency2 test = new TestLatency2(serverUri, latch, mapper);
-        //test.connect();
-        //test.testing();
+    public static SessionHandler initializeClient(URI  serverUri) throws URISyntaxException, InterruptedException, JsonProcessingException {
+        CountDownLatch latch = new CountDownLatch(1);  // Wait until connected.
+        ObjectMapper mapper = new ObjectMapper();
+        SessionHandler client = new SessionHandler(serverUri, latch, mapper);
 
+
+
+        setHandlers(client, mapper);
+
+        client.connect();
+
+
+        latch.await();
+
+
+
+        return client;
 
     }
+
+    public static void setHandlers(SessionHandler client, ObjectMapper mapper) throws URISyntaxException, InterruptedException, JsonProcessingException {
+        HeartbeatHandler heartbeatHandler = initializeHeartbeatHandler(client);
+        client.setHeartbeatHandler(heartbeatHandler);
+
+        SubscriptionHandler subHandler = initializeSubHandler(client, mapper);
+        client.setSubscriptionHandler(subHandler);
+
+    }
+
+
+    private static HeartbeatHandler initializeHeartbeatHandler(SessionHandler client) {
+        final long HEARTBEAT_INTERVAL = 10000;  // 10 seconds
+        final long HEARTBEAT_TIMEOUT = 15000;   // 15 seconds
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        return new HeartbeatHandler(client, scheduler, HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT);
+    }
+
+    private static SubscriptionHandler initializeSubHandler(SessionHandler client, ObjectMapper mapper) throws URISyntaxException, InterruptedException, JsonProcessingException {
+        PVcache cache = new PVcache();
+        SubscriptionHandler subHandler = new SubscriptionHandler(client, cache, mapper);
+        return subHandler;
+
+    }
+
+
+
 
 
 }
