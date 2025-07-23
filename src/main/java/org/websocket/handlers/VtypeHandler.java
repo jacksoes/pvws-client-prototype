@@ -9,7 +9,9 @@ import org.epics.vtype.Alarm;
 import org.epics.vtype.Time;
 import org.epics.vtype.Display;
 import org.epics.util.stats.Range;
+
 import java.text.NumberFormat;
+
 import org.epics.util.text.NumberFormats;
 import org.websocket.models.PV;
 
@@ -76,7 +78,7 @@ public class VtypeHandler {
                 NumberFormat numberFormat = NumberFormats.precisionFormat(precision != 0 ? precision : 2);
                 String unitStr = (units != null) ? units : "";
 
-                display = Display.of(displayRange, alarmRange, warningRange, controlRange, unitStr, numberFormat,  description);
+                display = Display.of(displayRange, alarmRange, warningRange, controlRange, unitStr, numberFormat, description);
             } catch (Exception e) {
                 System.err.println("Display.none()");
                 display = Display.none();

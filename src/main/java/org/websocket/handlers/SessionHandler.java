@@ -16,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import java.util.concurrent.*;
+
 import org.java_websocket.framing.PingFrame;
 import org.websocket.models.PvMetaData;
 import org.websocket.util.Base64BufferDeserializer;
@@ -43,7 +44,7 @@ public class SessionHandler extends WebSocketClient {
             System.out.println("Connected to server");
             latch.countDown();
             reconnectHandler.resetStatus();
-            heartbeatHandler.start(this);
+            heartbeatHandler.start();
         } catch (Exception e) {
             System.err.println("Exception in onOpen: " + e.getMessage());
             e.printStackTrace();
@@ -63,7 +64,6 @@ public class SessionHandler extends WebSocketClient {
             MetaDataCache.setData(pvMeta); // comment this line out to test missing
 
 
-
             // message recieved should always have a type field
             String type = node.get("type").asText();
             switch (type) {
@@ -73,23 +73,20 @@ public class SessionHandler extends WebSocketClient {
                     Base64BufferDeserializer.decodeArrValue(node, pvObj);
 
 
-
-
                     //every PV should have corresponding meta data if its not their resubscirbe and ignore message
-                    if(!MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
+                    if (!MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
 
                         final int MAX_SUBSCRIBE_ATTEMPTS = 5;
                         MetaDataCache.refetch(MAX_SUBSCRIBE_ATTEMPTS, pvObj, this);
 
-                            }
-                            else // if meta data is not missing continue
-                            {
+                    } else // if meta data is not missing continue
+                    {
 
-                                //subscribeAttempts.remove(pvObj.getPv()); // reset retry count if we got the meta data
-                                if(node.has("severity"))// if severity changes set it in cached value
-                                {
-                                    MetaDataCache.pvMetaMap.get(pvObj.getPv()).setSeverity(node.get("severity").asText());
-                                }
+                        //subscribeAttempts.remove(pvObj.getPv()); // reset retry count if we got the meta data
+                        if (node.has("severity"))// if severity changes set it in cached value
+                        {
+                            MetaDataCache.pvMetaMap.get(pvObj.getPv()).setSeverity(node.get("severity").asText());
+                        }
 
                         //merges class PV and json node of metadata together
                         JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
@@ -98,15 +95,16 @@ public class SessionHandler extends WebSocketClient {
                         VtypeHandler.processUpdate(pvObj);
                         System.out.println("🧊⛸️🥶: " + pvObj.toString());
                     }
-                        break;
-                    default:
-                        System.out.println("⚠️ 😤Unknown message type: " + type);
+                    break;
+                default:
+                    System.out.println("⚠️ 😤Unknown message type: " + type);
 
             }
         } catch (Exception e) {
             System.err.println("Error parsing or processing message: " + e.getMessage());
-            e.printStackTrace();}
+            e.printStackTrace();
         }
+    }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
@@ -122,9 +120,6 @@ public class SessionHandler extends WebSocketClient {
         heartbeatHandler.stop();
         attemptReconnect();
     }
-
-
-
 
 
     public void closeClient() {
@@ -152,7 +147,7 @@ public class SessionHandler extends WebSocketClient {
         subHandler.unSubscribe(pvs);
     }
 
-    public void attemptReconnect(){
+    public void attemptReconnect() {
         this.reconnectHandler.attemptReconnect();
     }
 
@@ -168,8 +163,6 @@ public class SessionHandler extends WebSocketClient {
         super.onWebsocketPong(conn, f);
         heartbeatHandler.setLastPongTime(System.currentTimeMillis());
     }
-
-
 
 
 }

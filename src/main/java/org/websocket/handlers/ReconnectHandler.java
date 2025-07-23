@@ -22,9 +22,6 @@ public class ReconnectHandler {
                     System.out.println("Attempting to reconnect...");
                     try {
                         boolean success = client.reconnectBlocking();  // Blocks until connected or fails
-                        System.out.println("reconnectBlocking() returned: " + success);
-                        System.out.println("client.isOpen(): " + client.isOpen());
-
                         if (client.isOpen()) {
                             System.out.println("Reconnected successfully.");
                             reconnecting.set(false);

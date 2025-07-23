@@ -29,7 +29,7 @@ public class HeartbeatHandler {
 
 
 
-    public void start(SessionHandler client){
+    public void start(){
 
 
         heartbeatTask = scheduler.scheduleAtFixedRate(() -> {
