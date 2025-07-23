@@ -1,13 +1,9 @@
-package org.websocket;
-
-
-import java.util.Base64;
+package org.websocket.handlers;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.framing.Framedata;
@@ -15,20 +11,15 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.websocket.models.PV;
 
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.*;
 import org.java_websocket.framing.PingFrame;
 import org.websocket.models.PvMetaData;
 import org.websocket.util.Base64BufferDeserializer;
 import org.websocket.util.MetaDataCache;
-
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 
 
 public class SessionHandler extends WebSocketClient {
@@ -40,11 +31,7 @@ public class SessionHandler extends WebSocketClient {
     private SubscriptionHandler subHandler;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    //detect missing heartbeats
-    private ScheduledFuture<?> heartbeatCheck;
-    private volatile long lastPongTime = System.currentTimeMillis();
-    private static final long HEARTBEAT_INTERVAL = 10000;  // 10 seconds
-    private static final long HEARTBEAT_TIMEOUT = 15000;   // 15 seconds
+    private HeartbeatHandler heartbeatHandler;
 
     public int testCount = 0;
 
@@ -61,7 +48,8 @@ public class SessionHandler extends WebSocketClient {
             System.out.println("Connected to server");
             latch.countDown();
             reconnecting = false;
-            handleHeartbeat();
+            //handleHeartbeat();
+            heartbeatHandler.start(this);
         } catch (Exception e) {
             System.err.println("Exception in onOpen: " + e.getMessage());
             e.printStackTrace();
@@ -116,7 +104,7 @@ public class SessionHandler extends WebSocketClient {
                         JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
                         mapper.readerForUpdating(pvObj).readValue(nodeMerge);
 
-                        PvProcessor.processUpdate(pvObj);
+                        VtypeHandler.processUpdate(pvObj);
                         System.out.println("🧊⛸️🥶: " + pvObj.toString());
                     }
                         break;
@@ -132,18 +120,20 @@ public class SessionHandler extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         System.out.println("❌ Disconnected. Reason: " + reason);
-        stopHeartbeat();
+        //stopHeartbeat();
+        heartbeatHandler.stop();
         attemptReconnect();
     }
 
     @Override
     public void onError(Exception ex) {
         System.err.println("🚨 WebSocket Error: " + ex.getMessage());
-        stopHeartbeat();
+        //stopHeartbeat();
+        heartbeatHandler.stop();
         attemptReconnect();
     }
 
-    private void attemptReconnect() {
+    public void attemptReconnect() {
         if (!reconnecting) {
             reconnecting = true;
 
@@ -185,23 +175,8 @@ public class SessionHandler extends WebSocketClient {
 
     private void handleHeartbeat() {
         System.out.println(" handleHeartbeat() called");
-        lastPongTime = System.currentTimeMillis();
-        heartbeatCheck = scheduler.scheduleAtFixedRate(() -> {
-            try {
-                //System.out.println(" Heartbeat loop running");
-                this.sendPing();
-                System.out.println("Ping sent");
-                scheduler.schedule(() -> {
-                    if (System.currentTimeMillis() - lastPongTime > HEARTBEAT_TIMEOUT) {
-                        System.out.println("Heartbeat timeout. Reconnecting...");
-                        attemptReconnect();
-                    }
-                }, 3, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                System.out.println("Heartbeat error: " + e.getMessage());
-                attemptReconnect();
-            }
-        }, 0, HEARTBEAT_INTERVAL, TimeUnit.MILLISECONDS);
+        //lastPongTime = System.currentTimeMillis();
+        heartbeatHandler.setLastPongTime(System.currentTimeMillis());
     }
 
     public void closeClient() {
@@ -212,6 +187,10 @@ public class SessionHandler extends WebSocketClient {
 
     public void setSubscriptionHandler(SubscriptionHandler subHandler) {
         this.subHandler = subHandler;
+    }
+
+    public void setHeartbeatHandler(HeartbeatHandler heartbeatHandler) {
+        this.heartbeatHandler = heartbeatHandler;
     }
 
     public void subscribeClient(String[] pvs) throws JsonProcessingException {
@@ -232,7 +211,9 @@ public class SessionHandler extends WebSocketClient {
     public void onWebsocketPong(WebSocket conn, Framedata f) {
         System.out.println("Received Pong frame"); // you could also comment this out to test the heartbeat timeout just for visual clarity
         super.onWebsocketPong(conn, f);
-        lastPongTime = System.currentTimeMillis();  // update last pong time- comment this line out to test heartbeat timeout
+        //lastPongTime = System.currentTimeMillis();  // update last pong time- comment this line out to test heartbeat timeout
+
+        heartbeatHandler.setLastPongTime(System.currentTimeMillis());
     }
 
 
@@ -250,9 +231,10 @@ public class SessionHandler extends WebSocketClient {
     }
 
     private void stopHeartbeat() {
-        if (heartbeatCheck != null && !heartbeatCheck.isCancelled()) {
-            heartbeatCheck.cancel(true);
-        }
+       // if (heartbeatCheck != null && !heartbeatCheck.isCancelled()) {
+         //   heartbeatCheck.cancel(true);
+       // }
+
     }
 
 

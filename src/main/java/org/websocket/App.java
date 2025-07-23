@@ -2,12 +2,17 @@ package org.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.websocket.handlers.HeartbeatHandler;
+import org.websocket.handlers.SessionHandler;
+import org.websocket.handlers.SubscriptionHandler;
 import org.websocket.util.PVcache;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.CountDownLatch;
-
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 
 // PIPELINE: 1. RECEIVED MESSAGE, 2. MAP TO OBJECT AND META DATA, 3. CREATE VTYPE
@@ -21,13 +26,19 @@ public class App {
         URI serverUri = new URI("ws://localhost:8080/pvws/pv");
         CountDownLatch latch = new CountDownLatch(1);  // Wait until connected.
         ObjectMapper mapper = new ObjectMapper();
+
         SessionHandler client = new SessionHandler(serverUri, latch, mapper);
         client.connect();
-
-
         PVcache cache = new PVcache();
         SubscriptionHandler subHandler = new SubscriptionHandler(client, cache, mapper);
         client.setSubscriptionHandler(subHandler);
+
+        final long HEARTBEAT_INTERVAL = 10000;  // 10 seconds
+        final long HEARTBEAT_TIMEOUT = 15000;
+        ScheduledExecutorService schedulerService = Executors.newSingleThreadScheduledExecutor();
+        HeartbeatHandler heartbeatHandler = new HeartbeatHandler(client, schedulerService, HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT);
+
+        client.setHeartbeatHandler(heartbeatHandler);
 
 
         // Wait up to 5 seconds for the connection to open
