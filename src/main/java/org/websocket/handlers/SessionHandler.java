@@ -4,6 +4,7 @@ package org.websocket.handlers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.epics.vtype.VType;
 import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.framing.Framedata;
@@ -17,20 +18,17 @@ import java.util.concurrent.*;
 
 import org.websocket.models.PvMetaData;
 import org.websocket.util.Base64BufferDeserializer;
-import org.websocket.util.MetadataHandler;
 
 
 public class SessionHandler extends WebSocketClient {
-
     private final ObjectMapper mapper;
     private final CountDownLatch latch;
+
     private SubscriptionHandler subHandler;
     private HeartbeatHandler heartbeatHandler;
     private ReconnectHandler reconnectHandler;
     private MetadataHandler metadataHandler;
-
-    public boolean gotFirst = false;
-
+    private VtypeHandler vtypeHandler;
 
     public SessionHandler(URI serverUri, CountDownLatch latch, ObjectMapper mapper) {
         super(serverUri);
@@ -54,12 +52,6 @@ public class SessionHandler extends WebSocketClient {
     @Override
     public void onMessage(String message) {
 
-        if (!gotFirst) {
-            gotFirst = true;
-            return;
-        }
-
-
         System.out.println("📨👍👍 Received: " + message);
 
         try {
@@ -82,24 +74,21 @@ public class SessionHandler extends WebSocketClient {
                         return;
 
                     }
-
-                    Base64BufferDeserializer.decodeArrValue(node, pvObj);
-
-
                     //subscribeAttempts.remove(pvObj.getPv()); // reset retry count if we got the meta data
-
                     if (node.has("severity"))// if severity changes set it in cached value
                     {
                         String currPV = pvObj.getPv();
                         String currSeverity = pvObj.getSeverity();
                         metadataHandler.pvMetaMap.get(currPV).setSeverity(currSeverity);
                     }
-
+                    //checks for encoded array attribute if present, decode and set arr as pv.value
+                    Base64BufferDeserializer.decodeArrValue(node, pvObj);
                     //merges class PV and json node of metadata together
                     JsonNode nodeMerge = mapper.valueToTree(metadataHandler.pvMetaMap.get(pvObj.getPv()));
                     mapper.readerForUpdating(pvObj).readValue(nodeMerge);
 
-                    VtypeHandler.processUpdate(pvObj);
+                    VType convertedPV = vtypeHandler.processUpdate(pvObj);
+
                     System.out.println("🧊⛸️🥶: " + pvObj.toString());
 
                     break;
@@ -116,7 +105,6 @@ public class SessionHandler extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         System.out.println("❌ Disconnected. Reason: " + reason);
-        //stopHeartbeat();
         heartbeatHandler.stop();
         attemptReconnect();
     }
@@ -148,6 +136,10 @@ public class SessionHandler extends WebSocketClient {
 
     public void setMetadataHandler(MetadataHandler metadataHandler) {
         this.metadataHandler = metadataHandler;
+    }
+
+    public void setVtypeHandler(VtypeHandler vtypeHandler) {
+        this.vtypeHandler = vtypeHandler;
     }
 
     public void subscribeClient(String[] pvs) throws JsonProcessingException {

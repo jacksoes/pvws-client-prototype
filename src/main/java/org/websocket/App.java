@@ -2,12 +2,9 @@ package org.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.websocket.handlers.HeartbeatHandler;
-import org.websocket.handlers.ReconnectHandler;
-import org.websocket.handlers.SessionHandler;
-import org.websocket.handlers.SubscriptionHandler;
+import org.websocket.handlers.*;
 import org.websocket.models.PvMetaData;
-import org.websocket.util.MetadataHandler;
+import org.websocket.handlers.MetadataHandler;
 import org.websocket.util.PVcache;
 
 import java.net.URI;
@@ -56,6 +53,8 @@ public class App {
         MetadataHandler metadataHandler = initializeMetadataHandler(client);
         client.setMetadataHandler(metadataHandler);
 
+        VtypeHandler vtypeHandler = intializeVtypeHandler();
+        client.setVtypeHandler(vtypeHandler);
 
     }
 
@@ -81,5 +80,11 @@ public class App {
 
         return new MetadataHandler(pvMetaMap, subscribeAttempts);
     }
+
+    private static VtypeHandler intializeVtypeHandler()
+    {
+        return new VtypeHandler();
+    }
+
 
 }

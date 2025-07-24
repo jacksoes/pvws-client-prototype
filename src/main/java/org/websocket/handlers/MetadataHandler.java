@@ -1,7 +1,6 @@
-package org.websocket.util;
+package org.websocket.handlers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.websocket.handlers.SessionHandler;
 import org.websocket.models.PV;
 import org.websocket.models.PvMetaData;
 

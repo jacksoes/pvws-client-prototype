@@ -5,7 +5,7 @@ import org.epics.vtype.*;
 //import org.epics.util.time.TimestampFormat;
 
 
-import org.epics.vtype.Alarm;
+        import org.epics.vtype.Alarm;
 import org.epics.vtype.Time;
 import org.epics.vtype.Display;
 import org.epics.util.stats.Range;
@@ -24,7 +24,7 @@ public class VtypeHandler {
 
     }
 
-    public static VType processUpdate(PV pvObj) {
+    public VType processUpdate(PV pvObj) {
         try {
             Object value = pvObj.getValue();
             if (value == null) {
