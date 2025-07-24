@@ -6,14 +6,13 @@ import org.websocket.handlers.HeartbeatHandler;
 import org.websocket.handlers.ReconnectHandler;
 import org.websocket.handlers.SessionHandler;
 import org.websocket.handlers.SubscriptionHandler;
+import org.websocket.models.PvMetaData;
+import org.websocket.util.MetadataHandler;
 import org.websocket.util.PVcache;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.*;
 
 
 public class App {
@@ -54,6 +53,9 @@ public class App {
         ReconnectHandler reconnectHandler = initializeReconnectHandler(client, scheduler);
         client.setReconnectHandler(reconnectHandler);
 
+        MetadataHandler metadataHandler = initializeMetadataHandler(client);
+        client.setMetadataHandler(metadataHandler);
+
 
     }
 
@@ -71,6 +73,13 @@ public class App {
 
     private static ReconnectHandler initializeReconnectHandler(SessionHandler client, ScheduledExecutorService scheduler) {
         return new ReconnectHandler(client, scheduler);
+    }
+
+    private static MetadataHandler initializeMetadataHandler(SessionHandler client) throws URISyntaxException, InterruptedException, JsonProcessingException {
+        ConcurrentHashMap<String, PvMetaData> pvMetaMap = new ConcurrentHashMap<String, PvMetaData>();
+        ConcurrentHashMap<String, Integer> subscribeAttempts = new ConcurrentHashMap<String, Integer>();
+
+        return new MetadataHandler(pvMetaMap, subscribeAttempts);
     }
 
 }

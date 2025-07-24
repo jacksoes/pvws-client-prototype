@@ -12,15 +12,12 @@ import org.websocket.models.PV;
 
 
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 import java.util.concurrent.*;
 
-import org.java_websocket.framing.PingFrame;
 import org.websocket.models.PvMetaData;
 import org.websocket.util.Base64BufferDeserializer;
-import org.websocket.util.MetaDataCache;
+import org.websocket.util.MetadataHandler;
 
 
 public class SessionHandler extends WebSocketClient {
@@ -30,6 +27,8 @@ public class SessionHandler extends WebSocketClient {
     private SubscriptionHandler subHandler;
     private HeartbeatHandler heartbeatHandler;
     private ReconnectHandler reconnectHandler;
+    private MetadataHandler metadataHandler;
+
     public boolean gotFirst = false;
 
 
@@ -68,7 +67,7 @@ public class SessionHandler extends WebSocketClient {
             JsonNode node = mapper.readTree(message);
             PvMetaData pvMeta = mapper.treeToValue(node, PvMetaData.class);
             if (pvMeta.getVtype() != null)
-                MetaDataCache.setData(pvMeta); // comment this line out to test missing
+                metadataHandler.setData(pvMeta); // comment this line out to test missing
 
 
             String type = node.get("type").asText();
@@ -76,10 +75,10 @@ public class SessionHandler extends WebSocketClient {
                 case "update":
                     PV pvObj = mapper.treeToValue(node, PV.class);
 
-                    if (!MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
+                    if (!metadataHandler.pvMetaMap.containsKey(pvObj.getPv())) {
 
                         final int MAX_SUBSCRIBE_ATTEMPTS = 5;
-                        MetaDataCache.refetch(MAX_SUBSCRIBE_ATTEMPTS, pvObj, this);
+                        metadataHandler.refetch(MAX_SUBSCRIBE_ATTEMPTS, pvObj, this);
                         return;
 
                     }
@@ -93,11 +92,11 @@ public class SessionHandler extends WebSocketClient {
                     {
                         String currPV = pvObj.getPv();
                         String currSeverity = pvObj.getSeverity();
-                        MetaDataCache.pvMetaMap.get(currPV).setSeverity(currSeverity);
+                        metadataHandler.pvMetaMap.get(currPV).setSeverity(currSeverity);
                     }
 
                     //merges class PV and json node of metadata together
-                    JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
+                    JsonNode nodeMerge = mapper.valueToTree(metadataHandler.pvMetaMap.get(pvObj.getPv()));
                     mapper.readerForUpdating(pvObj).readValue(nodeMerge);
 
                     VtypeHandler.processUpdate(pvObj);
@@ -145,6 +144,10 @@ public class SessionHandler extends WebSocketClient {
 
     public void setReconnectHandler(ReconnectHandler reconnectHandler) {
         this.reconnectHandler = reconnectHandler;
+    }
+
+    public void setMetadataHandler(MetadataHandler metadataHandler) {
+        this.metadataHandler = metadataHandler;
     }
 
     public void subscribeClient(String[] pvs) throws JsonProcessingException {
