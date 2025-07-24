@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class MetaDataCache {
-    public static final HashMap<String, PvMetaData> pvMetaMap = new HashMap<>();
+    public static final ConcurrentHashMap<String, PvMetaData> pvMetaMap = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Integer> subscribeAttempts = new ConcurrentHashMap<>();
 
 

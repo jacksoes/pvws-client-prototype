@@ -53,6 +53,8 @@ public class App {
 
         ReconnectHandler reconnectHandler = initializeReconnectHandler(client, scheduler);
         client.setReconnectHandler(reconnectHandler);
+
+
     }
 
 

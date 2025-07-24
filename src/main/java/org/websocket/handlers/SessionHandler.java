@@ -30,6 +30,8 @@ public class SessionHandler extends WebSocketClient {
     private SubscriptionHandler subHandler;
     private HeartbeatHandler heartbeatHandler;
     private ReconnectHandler reconnectHandler;
+    public boolean gotFirst = false;
+
 
 
     public SessionHandler(URI serverUri, CountDownLatch latch, ObjectMapper mapper) {
@@ -54,6 +56,12 @@ public class SessionHandler extends WebSocketClient {
     @Override
     public void onMessage(String message) {
 
+        if(!gotFirst)
+        {
+            gotFirst = true;
+            return;
+        }
+
 
         System.out.println("📨👍👍 Received: " + message);
 
@@ -61,7 +69,8 @@ public class SessionHandler extends WebSocketClient {
             JsonNode node = mapper.readTree(message);
             // each message from server has type, type of update will look something like this: {"type":"update","pv":"sim://sine","ts":"2025-06-30T19:39:50.
             PvMetaData pvMeta = mapper.treeToValue(node, PvMetaData.class);
-            MetaDataCache.setData(pvMeta); // comment this line out to test missing
+            if(pvMeta.getVtype() != null)
+                MetaDataCache.setData(pvMeta); // comment this line out to test missing
 
 
             // message recieved should always have a type field
@@ -70,17 +79,21 @@ public class SessionHandler extends WebSocketClient {
                 case "update": //this type means its an updated process variable;
                     PV pvObj = mapper.treeToValue(node, PV.class);
                     // checks for encoded array, if found it decodes and sets it as value of pv.
-                    Base64BufferDeserializer.decodeArrValue(node, pvObj);
 
-
-                    //every PV should have corresponding meta data if its not their resubscirbe and ignore message
                     if (!MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
 
                         final int MAX_SUBSCRIBE_ATTEMPTS = 5;
                         MetaDataCache.refetch(MAX_SUBSCRIBE_ATTEMPTS, pvObj, this);
+                        return;
 
-                    } else // if meta data is not missing continue
-                    {
+                    }
+
+                    Base64BufferDeserializer.decodeArrValue(node, pvObj);
+
+
+                    //every PV should have corresponding meta data if its not their resubscirbe and ignore message
+                     // if meta data is not missing continue
+
 
                         //subscribeAttempts.remove(pvObj.getPv()); // reset retry count if we got the meta data
                         if (node.has("severity"))// if severity changes set it in cached value
@@ -94,7 +107,7 @@ public class SessionHandler extends WebSocketClient {
 
                         VtypeHandler.processUpdate(pvObj);
                         System.out.println("🧊⛸️🥶: " + pvObj.toString());
-                    }
+
                     break;
                 default:
                     System.out.println("⚠️ 😤Unknown message type: " + type);
