@@ -33,7 +33,6 @@ public class SessionHandler extends WebSocketClient {
     public boolean gotFirst = false;
 
 
-
     public SessionHandler(URI serverUri, CountDownLatch latch, ObjectMapper mapper) {
         super(serverUri);
         this.latch = latch;
@@ -56,8 +55,7 @@ public class SessionHandler extends WebSocketClient {
     @Override
     public void onMessage(String message) {
 
-        if(!gotFirst)
-        {
+        if (!gotFirst) {
             gotFirst = true;
             return;
         }
@@ -66,19 +64,17 @@ public class SessionHandler extends WebSocketClient {
         System.out.println("📨👍👍 Received: " + message);
 
         try {
+
             JsonNode node = mapper.readTree(message);
-            // each message from server has type, type of update will look something like this: {"type":"update","pv":"sim://sine","ts":"2025-06-30T19:39:50.
             PvMetaData pvMeta = mapper.treeToValue(node, PvMetaData.class);
-            if(pvMeta.getVtype() != null)
+            if (pvMeta.getVtype() != null)
                 MetaDataCache.setData(pvMeta); // comment this line out to test missing
 
 
-            // message recieved should always have a type field
             String type = node.get("type").asText();
             switch (type) {
-                case "update": //this type means its an updated process variable;
+                case "update":
                     PV pvObj = mapper.treeToValue(node, PV.class);
-                    // checks for encoded array, if found it decodes and sets it as value of pv.
 
                     if (!MetaDataCache.pvMetaMap.containsKey(pvObj.getPv())) {
 
@@ -91,22 +87,21 @@ public class SessionHandler extends WebSocketClient {
                     Base64BufferDeserializer.decodeArrValue(node, pvObj);
 
 
-                    //every PV should have corresponding meta data if its not their resubscirbe and ignore message
-                     // if meta data is not missing continue
+                    //subscribeAttempts.remove(pvObj.getPv()); // reset retry count if we got the meta data
 
+                    if (node.has("severity"))// if severity changes set it in cached value
+                    {
+                        String currPV = pvObj.getPv();
+                        String currSeverity = pvObj.getSeverity();
+                        MetaDataCache.pvMetaMap.get(currPV).setSeverity(currSeverity);
+                    }
 
-                        //subscribeAttempts.remove(pvObj.getPv()); // reset retry count if we got the meta data
-                        if (node.has("severity"))// if severity changes set it in cached value
-                        {
-                            MetaDataCache.pvMetaMap.get(pvObj.getPv()).setSeverity(node.get("severity").asText());
-                        }
+                    //merges class PV and json node of metadata together
+                    JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
+                    mapper.readerForUpdating(pvObj).readValue(nodeMerge);
 
-                        //merges class PV and json node of metadata together
-                        JsonNode nodeMerge = mapper.valueToTree(MetaDataCache.pvMetaMap.get(pvObj.getPv()));
-                        mapper.readerForUpdating(pvObj).readValue(nodeMerge);
-
-                        VtypeHandler.processUpdate(pvObj);
-                        System.out.println("🧊⛸️🥶: " + pvObj.toString());
+                    VtypeHandler.processUpdate(pvObj);
+                    System.out.println("🧊⛸️🥶: " + pvObj.toString());
 
                     break;
                 default:
